@@ -1,7 +1,7 @@
 .PHONY: install demo clean mlflow-ui test
 
 install:
-	uv sync
+	uv sync --all-extras
 
 demo:
 	uv run oai-finance build
@@ -13,4 +13,4 @@ mlflow-ui:
 	uv run mlflow ui --backend-store-uri file://$(PWD)/mlruns --host 127.0.0.1 --port 5000
 
 test:
-	uv run pytest -q
+	.venv/bin/pytest tests/ -q
