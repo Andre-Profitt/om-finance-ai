@@ -169,6 +169,46 @@ def _markdown(report: EvalReport) -> str:
         "",
     ]
 
+    if report.exposure_by_specialty:
+        lines += [
+            "## Specialty coverage across all candidates",
+            "",
+            "| Specialty | Candidates | Dollars-at-risk |",
+            "|---|---|---|",
+        ]
+        for sp in sorted(
+            report.exposure_by_specialty.keys(), key=lambda k: -report.exposure_by_specialty[k]
+        ):
+            n = report.candidates_by_specialty.get(sp, 0)
+            dollars = report.exposure_by_specialty.get(sp, 0.0)
+            lines.append(f"| {sp} | {n:,} | ${dollars:,.0f} |")
+        lines.append("")
+
+    if report.precision_by_specialty:
+        lines += [
+            "## Top-100 queue — specialty concentration",
+            "",
+            "| Specialty | Precision @ top-100 | Dollars captured |",
+            "|---|---|---|",
+        ]
+        for sp in sorted(
+            report.precision_by_specialty.keys(),
+            key=lambda k: -report.dollars_captured_by_specialty.get(k, 0),
+        ):
+            precision = report.precision_by_specialty.get(sp, 0.0)
+            dollars = report.dollars_captured_by_specialty.get(sp, 0.0)
+            lines.append(f"| {sp} | {precision:.1%} | ${dollars:,.0f} |")
+        lines += [
+            "",
+            "**Product read:** the pipeline scores all five specialties; the top-100 "
+            "queue concentrates on the highest-dollar surface (oncology dominates because "
+            "per-administration drug values are largest there). Multispecialty exposure "
+            "shows in the broader candidate universe and through per-specialty filtering "
+            "in the reviewer UI. Per-specialty precision is the fairness signal the "
+            "model card §8 tracks at scale.",
+            "",
+        ]
+
     if report.citation_precision is not None:
         lines += [
             "## Evidence grounding (RAG)",

@@ -53,6 +53,10 @@ class EvalReport:
     citation_precision: float | None
     abstention_rate: float | None
     citation_precision_by_type: dict[str, float] = field(default_factory=dict)
+    precision_by_specialty: dict[str, float] = field(default_factory=dict)
+    dollars_captured_by_specialty: dict[str, float] = field(default_factory=dict)
+    exposure_by_specialty: dict[str, float] = field(default_factory=dict)
+    candidates_by_specialty: dict[str, int] = field(default_factory=dict)
 
 
 def _auc(y_true: np.ndarray, y_score: np.ndarray) -> float:
@@ -151,6 +155,36 @@ def evaluate(
         abst_rate = c.abstention_rate
         cit_by_type = c.precision_by_type
 
+    # Per-specialty slicing on the calibrated expected-recovery ranking.
+    rank_col = (
+        "expected_recovery_calibrated"
+        if "expected_recovery_calibrated" in scored.columns
+        else "expected_recovery"
+    )
+    ranked = scored.sort(rank_col, descending=True).head(100)
+    precision_by_specialty: dict[str, float] = {}
+    dollars_by_specialty: dict[str, float] = {}
+    exposure_by_specialty: dict[str, float] = {}
+    candidates_by_specialty: dict[str, int] = {}
+    if "practice_specialty" in ranked.columns and len(ranked) > 0:
+        by_spec = ranked.group_by("practice_specialty").agg(
+            pl.col("_true_leakage").cast(pl.Int8).sum().alias("n_leakage"),
+            pl.len().alias("n"),
+            pl.col("_true_leakage_amount").sum().alias("d"),
+        )
+        for row in by_spec.iter_rows(named=True):
+            sp = row["practice_specialty"]
+            precision_by_specialty[sp] = float(row["n_leakage"]) / row["n"] if row["n"] else 0.0
+            dollars_by_specialty[sp] = float(row["d"])
+    if "practice_specialty" in scored.columns:
+        by_all = scored.group_by("practice_specialty").agg(
+            pl.col("dollars_at_risk").sum().alias("d"),
+            pl.len().alias("n"),
+        )
+        for row in by_all.iter_rows(named=True):
+            exposure_by_specialty[row["practice_specialty"]] = float(row["d"])
+            candidates_by_specialty[row["practice_specialty"]] = int(row["n"])
+
     return EvalReport(
         n_exceptions=len(scored),
         n_all_claims=n_all,
@@ -170,6 +204,10 @@ def evaluate(
         citation_precision=cit_precision,
         abstention_rate=abst_rate,
         citation_precision_by_type=cit_by_type,
+        precision_by_specialty=precision_by_specialty,
+        dollars_captured_by_specialty=dollars_by_specialty,
+        exposure_by_specialty=exposure_by_specialty,
+        candidates_by_specialty=candidates_by_specialty,
     )
 
 

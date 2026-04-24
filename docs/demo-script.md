@@ -1,0 +1,103 @@
+# Demo Script — 2-minute Loom storyboard
+
+**Goal:** in 2 minutes, show that this is a real end-to-end Finance AI product with auditable governance, not a demo chatbot.
+
+**Target audience:** McKesson JR0143772 hiring manager and interview panel. Open with the running pipeline, not with slides.
+
+---
+
+## 0:00–0:15 — Thesis (15s, on camera or voice-over)
+
+_"McKesson O&M already ships claims acceptance via Glide Health, access automation via CoverMyMeds, GPO savings via Onmark, practice analytics via Regimen Profiler. What's missing is the finance-side operating layer above them — a governed reviewer queue that prioritizes, cites evidence, sizes ROI, and carries a controllership audit trail. That's what this repo builds."_
+
+(Terminal visible in background, about to run `make demo`.)
+
+## 0:15–0:45 — `make demo` end-to-end (30s, live)
+
+Run:
+
+```
+make demo
+```
+
+Call out as the stages scroll:
+
+- **"Bronze: real CMS ASP + 5k synthetic claims across oncology and multispecialty — 14 HCPCS spanning retinal, rheum, GI, neurology."**
+- **"Gold: eight exception types, priority-ordered — access PA gap first because that's pre-bill, then 340B and contract economics, then revenue cycle."**
+- **"LightGBM on 30 features, MLflow-tracked and registered. AUC 0.92 — on noisy labels so it's earned."**
+- **"Held-out isotonic calibration. Cross-validated in V2."**
+- **"RAG: retrieval plus a template that quotes the cited clause, or abstains."**
+- **"Governance: every decision goes into an append-only override log."**
+- **"Eval — the two headline numbers are on the last row."**
+
+Final line on screen:
+
+```
+expected recovery: precision@100=93.0% / $2,077,531
+citation precision: 99.7%  abstention rate: 26.8%
+```
+
+## 0:45–1:15 — Practice analytics (30s)
+
+Run:
+
+```
+uv run oai-finance practice-analysis
+```
+
+Narrate:
+
+- **"20-practice synthetic network, 7.17 million at risk, 5.84 million expected recovery."**
+- **"The tool auto-selects a target practice by expected recovery — PR-012, oncology, 53 exceptions on 250 claims, 46% of its exposure is in prior-auth gaps."**
+- **"Five sequenced initiatives over 100 days, modeled payback 4.5 months. These numbers are from the actual pipeline run, not prose estimates."**
+
+## 1:15–1:40 — Reviewer UI (25s, live Streamlit)
+
+Run:
+
+```
+make reviewer-ui
+```
+
+Open the browser. Narrate while clicking:
+
+- **"Top-100 queue ranked by calibrated expected recovery."**
+- Filter to `access_pa_gap` and show one item: **"This is a commercial-national PA gap. The cited clause is the commercial PA workflow doc, section 3. The explanation quotes the 14-day determination SLA and the CO-197 denial path."**
+- Toggle "Abstained only": **"When retrieval similarity is below 0.64, we refuse to cite. 27% abstention rate — honest, not confidently wrong."**
+- Click "Escalate to coding": **"The override log captures the decision plus rationale plus model version plus retrieved-doc version. That's the SOX-audit trail."**
+
+## 1:40–2:00 — Governance close (20s)
+
+Open `docs/governance.md`. Scroll to the alarm thresholds table.
+
+Narrate:
+
+- **"Calibration slope outside 0.85 to 1.15 for two consecutive runs opens a refresh ticket. Citation precision below 0.9, abstention outside 10–40%, override rate above 25% — each has a defined action. That's what makes this finance-AI rather than demo-AI."**
+
+Scroll to the JD crosswalk at the bottom of `docs/charter.md`:
+
+- **"Every JD phrase from JR0143772 maps to a section of the charter. That's on purpose."**
+
+End frame:
+
+```
+github.com/Andre-Profitt/om-finance-ai
+```
+
+---
+
+## Recording notes
+
+- Keep the terminal wide enough that the `make demo` stages are all legible.
+- Seed is pinned to 20260424; every run produces the same numbers. Re-record if needed without affecting narration.
+- Don't oversell: "synthetic data anchored to real CMS ASP" is the phrase. Stop short of any production performance claim.
+- Suppress MLflow deprecation warning visually (or `make clean` before recording).
+- If Ollama is running on the recording machine, set `OAI_ENABLE_LLM_PARAPHRASE=1` before `make demo` to show stage 7b paraphrasing the top-20. Otherwise the stage correctly reports `skipped: <n>` — don't try to hide it.
+
+## Longer (5-min) cut
+
+Add after the 1:40 governance close:
+
+- 1 min on the model card (`docs/model-card.md`) — walk through features, calibration, bias/fairness notes
+- 1 min on the roadmap (`docs/roadmap.md`) — V2 pilot plan and V3 network rollout
+- 1 min on the practice-performance memo — the FCS acquisition + Q3 FY26 framing, multispecialty readiness, AI opportunity backlog

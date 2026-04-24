@@ -14,3 +14,6 @@ mlflow-ui:
 
 test:
 	.venv/bin/pytest tests/ -q
+
+reviewer-ui:
+	uv run --extra ui streamlit run src/oaifinance/ui/app.py

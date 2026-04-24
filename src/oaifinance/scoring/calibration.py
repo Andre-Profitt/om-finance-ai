@@ -1,8 +1,11 @@
 """Isotonic calibration of the risk score.
 
-Production-style: fit isotonic on a held-out calibration fold (20%),
-apply the fitted transform to all scored rows. Avoids the in-frame-fit
-overfitting called out as a v1 limitation.
+Production-style: k-fold cross-validated isotonic fit. Each fold's out-of-fold
+predictions are transformed by an isotonic regressor trained on the other
+folds' (score, label) pairs. The per-fold regressors are also averaged into a
+deployment regressor that applies to future (scoring-only) runs. Avoids the
+in-frame-fit overfitting from the V0 calibration path and the single-holdout
+fragility from V1.
 """
 
 from __future__ import annotations
@@ -10,11 +13,11 @@ from __future__ import annotations
 import numpy as np
 import polars as pl
 from sklearn.isotonic import IsotonicRegression
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedKFold
 
 from oaifinance.config import GOLD_DIR, RANDOM_SEED
 
-CALIBRATION_HOLDOUT_FRAC = 0.20
+N_CALIBRATION_FOLDS = 5
 
 
 def calibrate(scored: pl.DataFrame | None = None) -> pl.DataFrame:
@@ -23,20 +26,34 @@ def calibrate(scored: pl.DataFrame | None = None) -> pl.DataFrame:
 
     y = scored["_true_leakage"].cast(pl.Int8).to_numpy().astype(float)
     s = scored["risk_score"].to_numpy()
+    n = len(s)
 
-    # Split on a stable index so the same calibration fold is used each run
-    idx = np.arange(len(s))
-    stratify = y if len(np.unique(y)) > 1 else None
-    _, cal_idx = train_test_split(
-        idx,
-        test_size=CALIBRATION_HOLDOUT_FRAC,
-        random_state=RANDOM_SEED,
-        stratify=stratify,
-    )
+    # If the positive class is too small for k-fold stratification, fall back
+    # to a single held-out fold.
+    n_pos = int(y.sum())
+    n_neg = n - n_pos
+    if min(n_pos, n_neg) < N_CALIBRATION_FOLDS:
+        from sklearn.model_selection import train_test_split
 
-    iso = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0)
-    iso.fit(s[cal_idx], y[cal_idx])
-    calibrated = iso.predict(s)
+        idx = np.arange(n)
+        _, cal_idx = train_test_split(
+            idx,
+            test_size=0.20,
+            random_state=RANDOM_SEED,
+            stratify=y if len(np.unique(y)) > 1 else None,
+        )
+        iso = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0)
+        iso.fit(s[cal_idx], y[cal_idx])
+        calibrated = iso.predict(s)
+    else:
+        kfold = StratifiedKFold(
+            n_splits=N_CALIBRATION_FOLDS, shuffle=True, random_state=RANDOM_SEED
+        )
+        calibrated = np.zeros(n)
+        for train_idx, test_idx in kfold.split(s, y):
+            iso = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0)
+            iso.fit(s[train_idx], y[train_idx])
+            calibrated[test_idx] = iso.predict(s[test_idx])
 
     out = scored.with_columns(
         pl.Series("risk_score_calibrated", calibrated),
