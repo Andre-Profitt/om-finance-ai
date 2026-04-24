@@ -1,0 +1,11 @@
+hcpcs_code,short_description,dosage_per_unit_mg,payment_limit_per_unit,effective_date,biosimilar_reference
+J9035,"Bevacizumab injection",10,7.148,2026-04-01,true
+J9299,"Nivolumab injection",1,27.892,2026-04-01,false
+J9312,"Rituximab injection",10,71.240,2026-04-01,true
+J9228,"Ipilimumab injection",1,158.940,2026-04-01,false
+J9145,"Daratumumab injection",10,76.510,2026-04-01,false
+J9173,"Durvalumab injection",10,112.330,2026-04-01,false
+J9271,"Pembrolizumab injection",1,52.185,2026-04-01,false
+J9317,"Trastuzumab deruxtecan",1,26.915,2026-04-01,false
+J9144,"Daratumumab and hyaluronidase",1,7.650,2026-04-01,false
+J9042,"Brentuximab vedotin",1,84.220,2026-04-01,false

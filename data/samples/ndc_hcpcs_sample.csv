@@ -1,0 +1,17 @@
+ndc_code,hcpcs_code,labeler_name,brand_name,package_size_mg,billed_units_per_package
+50242-060-01,J9035,Genentech,Avastin,400,40
+50242-061-01,J9035,Genentech,Avastin,100,10
+0003-3772-11,J9299,Bristol-Myers Squibb,Opdivo,240,240
+0003-3774-12,J9299,Bristol-Myers Squibb,Opdivo,100,100
+50242-051-21,J9312,Genentech,Rituxan,500,50
+50242-053-06,J9312,Genentech,Rituxan,100,10
+0003-2328-11,J9228,Bristol-Myers Squibb,Yervoy,200,200
+0003-2327-11,J9228,Bristol-Myers Squibb,Yervoy,50,50
+57894-502-04,J9145,Janssen,Darzalex,400,40
+57894-502-05,J9145,Janssen,Darzalex,100,10
+0310-4611-50,J9173,AstraZeneca,Imfinzi,500,50
+0310-4500-50,J9173,AstraZeneca,Imfinzi,120,12
+0006-3026-02,J9271,Merck,Keytruda,100,100
+0069-0299-01,J9317,Daiichi Sankyo,Enhertu,100,100
+57894-502-06,J9144,Janssen,Darzalex Faspro,1800,1
+0078-0827-61,J9042,Seagen,Adcetris,50,50
