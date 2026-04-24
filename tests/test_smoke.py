@@ -24,8 +24,20 @@ def test_pipeline_runs():
     assert (
         report.by_expected_recovery.dollars_captured_at_100
         >= report.by_risk_score.dollars_captured_at_100
-    ), (
-        "expected-recovery ranking should capture at least as much $ as P(leakage) ranking at top-100"
+    ), "expected-recovery ranking should capture at least as much $ as P(leakage) at top-100"
+
+    assert report.dollars_at_risk_total > 0
+
+    # Week 2 invariants: calibration + RAG shipped
+    assert report.calibration_slope_calibrated is not None, "isotonic calibration missing"
+    assert 0.85 <= report.calibration_slope_calibrated <= 1.15, (
+        f"calibrated slope {report.calibration_slope_calibrated:.3f} outside (0.85, 1.15)"
     )
 
-    assert report.dollars_at_risk_total > 0, "ground-truth leakage should be non-zero"
+    assert report.citation_precision is not None, "RAG citation eval missing"
+    assert report.citation_precision >= 0.85, (
+        f"citation precision {report.citation_precision:.3f} below 0.85"
+    )
+
+    assert report.abstention_rate is not None
+    assert 0.0 <= report.abstention_rate <= 1.0

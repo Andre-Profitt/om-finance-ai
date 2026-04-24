@@ -1,21 +1,24 @@
 """Business-outcome eval metrics.
 
-Two rankings are compared so the TPM demo surfaces the core product tradeoff:
+Two rankings are reported so the TPM demo surfaces the core product tradeoff:
 - `risk_score` queue: highest-probability leakage first (maximizes precision)
 - `expected_recovery` queue: P(leakage) × dollars-at-risk (maximizes $ captured)
 
-Also reports a "rules-only baseline" — what you'd get without the model, working
-rule-flagged candidates uniformly.
+A rules-only baseline (uniform review of all candidates) is also reported.
+
+When an `explained` frame is provided, citation precision and abstention rate
+are rolled into the headline report.
 """
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 import numpy as np
 import polars as pl
 
 from oaifinance.config import REVIEWER_LOADED_HOURLY, REVIEWER_REVIEW_MINUTES
+from oaifinance.eval.citation import evaluate as evaluate_citations
 
 
 @dataclass
@@ -40,11 +43,16 @@ class EvalReport:
     auc: float
     calibration_slope: float
     calibration_intercept: float
+    calibration_slope_calibrated: float | None
     by_risk_score: RankedReport
     by_expected_recovery: RankedReport
+    by_expected_recovery_calibrated: RankedReport | None
     rules_only_baseline_dollars: float
     rules_only_baseline_hours: float
     uplift_dollars_vs_rules_at_100: float
+    citation_precision: float | None
+    abstention_rate: float | None
+    citation_precision_by_type: dict[str, float] = field(default_factory=dict)
 
 
 def _auc(y_true: np.ndarray, y_score: np.ndarray) -> float:
@@ -102,12 +110,23 @@ def _rank_metrics(scored: pl.DataFrame, rank_col: str) -> RankedReport:
     )
 
 
-def evaluate(scored: pl.DataFrame, all_claims: pl.DataFrame | None = None) -> EvalReport:
+def evaluate(
+    scored: pl.DataFrame,
+    all_claims: pl.DataFrame | None = None,
+    explained: pl.DataFrame | None = None,
+) -> EvalReport:
     y_true = scored["_true_leakage"].cast(pl.Int8).to_numpy()
     y_score = scored["risk_score"].to_numpy()
 
     auc = _auc(y_true, y_score)
     slope, intercept = _calibration(y_true.astype(float), y_score)
+
+    slope_cal = None
+    by_recovery_cal = None
+    if "risk_score_calibrated" in scored.columns:
+        s_cal = scored["risk_score_calibrated"].to_numpy()
+        slope_cal, _ = _calibration(y_true.astype(float), s_cal)
+        by_recovery_cal = _rank_metrics(scored, "expected_recovery_calibrated")
 
     by_risk = _rank_metrics(scored, "risk_score")
     by_recovery = _rank_metrics(scored, "expected_recovery")
@@ -123,6 +142,15 @@ def evaluate(scored: pl.DataFrame, all_claims: pl.DataFrame | None = None) -> Ev
     n_all = int(len(all_claims)) if all_claims is not None else None
     base_all = float(all_claims["_true_leakage"].mean()) if all_claims is not None else None
 
+    cit_precision = None
+    abst_rate = None
+    cit_by_type: dict[str, float] = {}
+    if explained is not None:
+        c = evaluate_citations(explained)
+        cit_precision = c.citation_precision
+        abst_rate = c.abstention_rate
+        cit_by_type = c.precision_by_type
+
     return EvalReport(
         n_exceptions=len(scored),
         n_all_claims=n_all,
@@ -132,17 +160,21 @@ def evaluate(scored: pl.DataFrame, all_claims: pl.DataFrame | None = None) -> Ev
         auc=auc,
         calibration_slope=slope,
         calibration_intercept=intercept,
+        calibration_slope_calibrated=slope_cal,
         by_risk_score=by_risk,
         by_expected_recovery=by_recovery,
+        by_expected_recovery_calibrated=by_recovery_cal,
         rules_only_baseline_dollars=rules_only_dollars,
         rules_only_baseline_hours=rules_only_hours,
         uplift_dollars_vs_rules_at_100=uplift,
+        citation_precision=cit_precision,
+        abstention_rate=abst_rate,
+        citation_precision_by_type=cit_by_type,
     )
 
 
 def report_dict(report: EvalReport) -> dict:
-    d = asdict(report)
-    return d
+    return asdict(report)
 
 
 def reviewer_cost_at_k(k: int) -> float:
