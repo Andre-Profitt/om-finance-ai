@@ -131,7 +131,10 @@ without a model-generated explanation.
 | **Governance reference architecture** | [docs/governance.md](docs/governance.md)                               | **Week 4 shipped**     |
 | Decision log                          | [docs/decision-log.md](docs/decision-log.md)                           | Running                |
 | Roadmap V1/V2/V3                      | [docs/roadmap.md](docs/roadmap.md)                                     | v1                     |
-| Dashboards (SQL)                      | [dashboards/](dashboards/)                                             | 6 queries              |
+| Refinement plan (V1→V4)               | [docs/refinement-plan.md](docs/refinement-plan.md)                     | living — Tracks A–F    |
+| Dashboards (SQL)                      | [dashboards/](dashboards/)                                             | 8 queries              |
+| Demo script                           | [docs/demo-script.md](docs/demo-script.md)                             | 2-min + 5-min cuts     |
+| Model card                            | [docs/model-card.md](docs/model-card.md)                               | v1                     |
 
 ## Build plan (4 weeks)
 
