@@ -59,3 +59,20 @@ def test_pipeline_runs():
     assert contract_types.issubset(types), (
         f"missing contract-economics exception types: {contract_types - types}"
     )
+
+    # Week 4 invariants: access/PA + multispecialty coverage + practice analytics
+    assert "access_pa_gap" in types, "missing access_pa_gap exception type"
+
+    specialties = set(exceptions["practice_specialty"].unique().to_list())
+    assert "oncology" in specialties, "oncology specialty missing"
+    assert len(specialties) >= 2, f"expected multispecialty coverage, saw only: {specialties}"
+
+    from oaifinance.practice import performance
+
+    model = performance.analyze()
+    assert model.network_summary["n_practices"] >= 5
+    assert model.network_summary["total_at_risk"] > 0
+    assert len(model.initiatives) == 5
+    assert model.total_projected_net_value > 0, (
+        "expected positive net value from 100-day initiatives"
+    )

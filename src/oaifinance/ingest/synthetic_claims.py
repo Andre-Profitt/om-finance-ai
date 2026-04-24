@@ -1,10 +1,10 @@
-"""Synthetic oncology claims generator.
+"""Synthetic specialty-care claims generator.
 
-Generative model has a latent `is_true_error` state per claim that rules
-observe *noisily*. Rules therefore miss cases (low recall) and fire on some
-clean claims (false positives). The label `_true_leakage` is defined in
-dollars-recoverable terms, so the ML scorer must combine weak signals
-(rule flags + billed ratios + payer + biosimilar + magnitude) to rank
+Covers oncology + multispecialty (retinal, rheumatology, gastroenterology,
+neurology) practices. Generative model has a latent `is_true_error` state
+per claim that rules observe *noisily*, so rules miss cases (low recall) and
+fire on some clean claims (false positives). The ML scorer must combine weak
+signals (rule flags + billed ratios + payer + magnitude + specialty) to rank
 candidates better than any single rule.
 """
 
@@ -16,7 +16,9 @@ import polars as pl
 from oaifinance.config import (
     BRONZE_DIR,
     PAYER_ARCHETYPES,
+    PRACTICE_SPECIALTY_DISTRIBUTION,
     RANDOM_SEED,
+    SPECIALTIES,
     SYNTHETIC_CLAIMS_N,
     SYNTHETIC_DIR,
 )
@@ -45,6 +47,16 @@ ERROR_OBS_PROB = {
     "denied_given_error_mismatch": 0.25,
 }
 
+# Access / prior-auth dynamics — PA is payer-side and specialty-sensitive.
+PA_REQUIRED_RATE = {
+    "medicare_ffs": 0.05,
+    "commercial_national": 0.85,
+    "commercial_regional": 0.90,
+    "medicaid_managed": 0.70,
+}
+PA_ON_FILE_GIVEN_REQUIRED = 0.88  # practice remembers to submit PA 88% of the time
+PA_GAP_DENIAL_PROB = 0.75  # when PA required and not on file → claim denied with CO-197
+
 CARC_CODES = {
     "prior_auth": "CO-197",
     "medical_necessity": "CO-50",
@@ -56,42 +68,55 @@ CARC_CODES = {
 }
 
 LEAKAGE_DOLLAR_THRESHOLD = 200.0
+PA_DELAY_COST_PER_CLAIM = 85.0  # modeled per-claim operational impact when PA delay occurs
 
-PRACTICE_340B_SHARE = 0.25  # share of practices that are 340B covered entities
-CLAIM_340B_PURCHASE_GIVEN_ELIGIBLE = 0.55  # share of eligible practice's claims purchased via 340B
-GPO_REBATE_CLAIMED_RATE = 0.88  # share of claims that flow into GPO rebate accrual
+PRACTICE_340B_SHARE = 0.25
+CLAIM_340B_PURCHASE_GIVEN_ELIGIBLE = 0.55
+GPO_REBATE_CLAIMED_RATE = 0.88
 
 COMMERCIAL_PAYERS = ("commercial_national", "commercial_regional")
-BIOSIMILAR_CONVERSION_MISS_BUMP = 0.05  # extra error prob on bios-reference commercial claims
-BIOSIMILAR_MISSED_REBATE_RATE = (
-    0.025  # 2.5% incremental rebate lost on reference when biosim preferred
-)
-GPO_REBATE_CLAWBACK_RATE = 0.020  # ~2% clawback when 340B + rebate double-dip caught
-GPO_CLAWBACK_REALIZED_RATE = (
-    0.55  # share of double-dip events that actually result in clawback (noise)
-)
-BIOSIMILAR_MISS_REALIZED_RATE = (
-    0.48  # share of conversion misses that realize recoverable leakage (noise)
-)
+BIOSIMILAR_CONVERSION_MISS_BUMP = 0.05
+BIOSIMILAR_MISSED_REBATE_RATE = 0.025
+GPO_REBATE_CLAWBACK_RATE = 0.020
+GPO_CLAWBACK_REALIZED_RATE = 0.55
+BIOSIMILAR_MISS_REALIZED_RATE = 0.48
+
+# Clinically plausible total-mg target per admin by HCPCS — covers oncology
+# and multispecialty.
+HCPCS_TARGET_MG = {
+    # Oncology
+    "J9035": 400,
+    "J9299": 480,
+    "J9312": 700,
+    "J9228": 240,
+    "J9145": 1600,
+    "J9173": 1500,
+    "J9271": 200,
+    "J9317": 400,
+    "J9144": 1800,
+    "J9042": 180,
+    # Retinal (aflibercept 2mg per injection; dosed per-eye)
+    "J0178": 4,
+    # Rheumatology (golimumab IV 100mg)
+    "J1602": 100,
+    # Gastroenterology (ustekinumab IV ~260mg then SC ~90mg maintenance)
+    "J3357": 130,
+    # Neurology (ocrelizumab 600mg every 6 months)
+    "J1559": 300,
+}
 
 
 def _sample_units(rng: np.random.Generator, hcpcs: str, dosage_per_unit_mg: int) -> int:
-    """Clinically plausible total-unit count for a single administration."""
-    target_mg = {
-        "J9035": 400,
-        "J9299": 480,
-        "J9312": 700,
-        "J9228": 240,
-        "J9145": 1600,
-        "J9173": 1500,
-        "J9271": 200,
-        "J9317": 400,
-        "J9144": 1800,
-        "J9042": 180,
-    }
     jitter = rng.normal(1.0, 0.08)
-    target = max(1, int(target_mg.get(hcpcs, 100) * jitter))
-    return max(1, target // dosage_per_unit_mg)
+    target = max(1, int(HCPCS_TARGET_MG.get(hcpcs, 100) * jitter))
+    return max(1, target // max(1, dosage_per_unit_mg))
+
+
+def _assign_specialties(practice_ids: list[str], rng: np.random.Generator) -> dict[str, str]:
+    specialties = list(PRACTICE_SPECIALTY_DISTRIBUTION.keys())
+    probs = np.array([PRACTICE_SPECIALTY_DISTRIBUTION[s] for s in specialties])
+    probs = probs / probs.sum()
+    return {pid: str(rng.choice(specialties, p=probs)) for pid in practice_ids}
 
 
 def generate(
@@ -102,15 +127,17 @@ def generate(
 ) -> pl.DataFrame:
     rng = np.random.default_rng(seed)
 
-    hcpcs_list = np.array(asp["hcpcs_code"].to_list())
-    asp_map = {
-        row["hcpcs_code"]: (
+    hcpcs_by_specialty: dict[str, list[str]] = {s: [] for s in SPECIALTIES}
+    asp_map: dict[str, tuple[int, float, bool, str]] = {}
+    for row in asp.iter_rows(named=True):
+        specialty = str(row.get("specialty") or "oncology")
+        hcpcs_by_specialty.setdefault(specialty, []).append(row["hcpcs_code"])
+        asp_map[row["hcpcs_code"]] = (
             int(row["dosage_per_unit_mg"]),
             float(row["payment_limit_per_unit"]),
             bool(row["biosimilar_reference"]),
+            specialty,
         )
-        for row in asp.iter_rows(named=True)
-    }
 
     ndc_by_hcpcs: dict[str, list[str]] = {}
     for row in crosswalk.iter_rows(named=True):
@@ -119,18 +146,26 @@ def generate(
     payers = np.array(PAYER_ARCHETYPES)
 
     practice_ids = [f"PR-{i:03d}" for i in range(1, 21)]
-    practice_340b = {pid: (rng.random() < PRACTICE_340B_SHARE) for pid in practice_ids}
+    practice_specialty = _assign_specialties(practice_ids, rng)
+    practice_340b = {pid: rng.random() < PRACTICE_340B_SHARE for pid in practice_ids}
 
     rows = []
     for i in range(n_claims):
-        hcpcs = str(hcpcs_list[rng.integers(0, len(hcpcs_list))])
-        dosage_per_unit, asp_rate, is_bios_ref = asp_map[hcpcs]
-        payer = str(payers[rng.integers(0, len(payers))])
         practice_id = str(practice_ids[rng.integers(0, len(practice_ids))])
+        specialty = practice_specialty[practice_id]
+        hcpcs_pool = hcpcs_by_specialty.get(specialty) or hcpcs_by_specialty["oncology"]
+        hcpcs = str(hcpcs_pool[rng.integers(0, len(hcpcs_pool))])
+
+        dosage_per_unit, asp_rate, is_bios_ref, drug_specialty = asp_map[hcpcs]
+        payer = str(payers[rng.integers(0, len(payers))])
         is_340b_practice = bool(practice_340b[practice_id])
         is_340b_purchased = is_340b_practice and rng.random() < CLAIM_340B_PURCHASE_GIVEN_ELIGIBLE
         gpo_rebate_claimed = rng.random() < GPO_REBATE_CLAIMED_RATE
         gpo_340b_double_dip = is_340b_purchased and gpo_rebate_claimed
+
+        pa_required = rng.random() < PA_REQUIRED_RATE[payer]
+        pa_on_file = (not pa_required) or (rng.random() < PA_ON_FILE_GIVEN_REQUIRED)
+        pa_gap = pa_required and not pa_on_file
 
         units = _sample_units(rng, hcpcs, dosage_per_unit)
 
@@ -154,7 +189,6 @@ def generate(
         valid_ndcs = ndc_by_hcpcs.get(hcpcs, list(all_ndcs))
         wrong_pool = [n for n in all_ndcs.tolist() if n not in valid_ndcs]
         ndc_mismatch_obs = False
-        ndc: str
         if is_true_error and rng.random() < ERROR_OBS_PROB["ndc_mismatch_true"] and wrong_pool:
             ndc = str(wrong_pool[rng.integers(0, len(wrong_pool))])
             ndc_mismatch_obs = True
@@ -172,28 +206,35 @@ def generate(
         billed_total = round(billed_per_unit * units, 2)
         allowed_total = round(allowed_per_unit * units, 2)
 
-        if is_true_error:
-            p = ERROR_OBS_PROB["denied_given_error"]
-            if asp_drift_obs:
-                p += ERROR_OBS_PROB["denied_given_error_drift"]
-            if ndc_mismatch_obs:
-                p += ERROR_OBS_PROB["denied_given_error_mismatch"]
-            denial_prob = min(0.95, p)
+        if pa_gap and rng.random() < PA_GAP_DENIAL_PROB:
+            denied = True
+            denial_reason_pa = True
         else:
-            denial_prob = CLEAN_DENIAL_RATE[payer]
-
-        denied = rng.random() < denial_prob
+            if is_true_error:
+                p = ERROR_OBS_PROB["denied_given_error"]
+                if asp_drift_obs:
+                    p += ERROR_OBS_PROB["denied_given_error_drift"]
+                if ndc_mismatch_obs:
+                    p += ERROR_OBS_PROB["denied_given_error_mismatch"]
+                denial_prob = min(0.95, p)
+            else:
+                denial_prob = CLEAN_DENIAL_RATE[payer]
+            denied = rng.random() < denial_prob
+            denial_reason_pa = False
 
         if denied:
             paid_total = 0.0
             status = "denied"
-            if ndc_mismatch_obs:
-                carc_pool = ["coding"]
+            if denial_reason_pa:
+                carc = CARC_CODES["prior_auth"]
+            elif ndc_mismatch_obs:
+                carc = CARC_CODES["coding"]
             elif asp_drift_obs:
                 carc_pool = ["prior_auth", "medical_necessity"]
+                carc = CARC_CODES[str(carc_pool[rng.integers(0, len(carc_pool))])]
             else:
                 carc_pool = list(CARC_CODES.keys())
-            carc = CARC_CODES[str(carc_pool[rng.integers(0, len(carc_pool))])]
+                carc = CARC_CODES[str(carc_pool[rng.integers(0, len(carc_pool))])]
         else:
             if is_true_error:
                 paid_total = round(allowed_total * rng.uniform(0.55, 0.92), 2)
@@ -202,7 +243,7 @@ def generate(
             status = "paid"
             carc = None
 
-        if is_true_error:
+        if is_true_error or denial_reason_pa:
             leakage_amount = max(0.0, allowed_total - paid_total)
         else:
             leakage_amount = 0.0
@@ -211,6 +252,8 @@ def generate(
             leakage_amount += allowed_total * BIOSIMILAR_MISSED_REBATE_RATE
         if gpo_340b_double_dip and rng.random() < GPO_CLAWBACK_REALIZED_RATE:
             leakage_amount += allowed_total * GPO_REBATE_CLAWBACK_RATE
+
+        access_delay_cost = PA_DELAY_COST_PER_CLAIM if pa_gap else 0.0
 
         true_leakage = leakage_amount > LEAKAGE_DOLLAR_THRESHOLD
 
@@ -221,6 +264,8 @@ def generate(
                 "claim_id": f"CLM-{i:06d}",
                 "service_date": str(service_date),
                 "practice_id": practice_id,
+                "practice_specialty": specialty,
+                "drug_specialty": drug_specialty,
                 "hcpcs_code": hcpcs,
                 "ndc_code": ndc,
                 "payer": payer,
@@ -238,6 +283,11 @@ def generate(
                 "gpo_rebate_claimed": bool(gpo_rebate_claimed),
                 "gpo_340b_double_dip": bool(gpo_340b_double_dip),
                 "biosimilar_conversion_miss": bool(biosimilar_conversion_miss),
+                "pa_required": bool(pa_required),
+                "pa_on_file": bool(pa_on_file),
+                "pa_gap": bool(pa_gap),
+                "denial_reason_pa": bool(denial_reason_pa),
+                "access_delay_cost": float(access_delay_cost),
                 "_true_leakage_amount": round(float(leakage_amount), 2),
                 "_true_leakage": bool(true_leakage),
             }
@@ -277,5 +327,6 @@ if __name__ == "__main__":
     c = ingest_crosswalk()
     df = ingest(a, c)
     print(f"generated {len(df)} claims")
-    print(f"true_leakage rate: {df['_true_leakage'].mean():.1%}")
-    print(f"denial rate: {(df['adjudication_status'] == 'denied').mean():.1%}")
+    print(df.group_by("practice_specialty").len().sort("len", descending=True))
+    print(f"pa_gap rate: {df['pa_gap'].mean():.1%}")
+    print(f"denial_reason_pa: {df['denial_reason_pa'].sum()}")

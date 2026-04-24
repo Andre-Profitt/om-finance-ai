@@ -56,6 +56,12 @@ QUERY_TEMPLATES = {
         "validation rejection under variance reason code; audit of submission "
         "requirements"
     ),
+    "access_pa_gap": (
+        "Prior authorization required for specialty drug {hcpcs} on {payer}; "
+        "PA documentation missing or not on file; claim denied with CO-197 "
+        "pending authorization; access delay and expected determination "
+        "timeline"
+    ),
 }
 
 EXPLANATION_TEMPLATES = {

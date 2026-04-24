@@ -68,6 +68,16 @@ GOLDEN_CITATIONS: dict[str, set[tuple[str, str]]] = {
         ("gpo_master_oncology_rebate", "Exclusions and Exceptions"),
         ("commercial_national_nccn_compendium", "Billed Amount Review"),
     },
+    "access_pa_gap": {
+        ("commercial_national_prior_auth_workflow", "Prior Authorization Requirement"),
+        ("commercial_national_prior_auth_workflow", "Required Documentation"),
+        ("commercial_national_prior_auth_workflow", "Expected Determination Timeline"),
+        ("commercial_national_prior_auth_workflow", "Access Delay Financial Impact"),
+        ("commercial_national_prior_auth_workflow", "Appeal Path for PA Denials"),
+        ("commercial_regional_prior_auth_oncology", "Prior Authorization Required"),
+        ("medicare_lcd_oncology_iv_biologics", "Prior Authorization"),
+        ("medicaid_managed_specialty_pharmacy", "Timely Filing and Appeals"),
+    },
 }
 
 

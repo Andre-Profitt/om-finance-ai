@@ -19,18 +19,15 @@ MLRUNS_DIR = REPO_ROOT / "mlruns"
 RANDOM_SEED = 20260424
 SYNTHETIC_CLAIMS_N = 5000
 
-ONCOLOGY_HCPCS = [
-    "J9035",  # bevacizumab
-    "J9299",  # nivolumab
-    "J9312",  # rituximab
-    "J9228",  # ipilimumab
-    "J9145",  # daratumumab
-    "J9173",  # durvalumab
-    "J9271",  # pembrolizumab
-    "J9317",  # trastuzumab deruxtecan
-    "J9144",  # daratumumab-hyaluronidase
-    "J9042",  # brentuximab vedotin
-]
+SPECIALTIES = ("oncology", "retinal", "rheumatology", "gastroenterology", "neurology")
+
+PRACTICE_SPECIALTY_DISTRIBUTION = {
+    "oncology": 0.55,
+    "retinal": 0.15,
+    "rheumatology": 0.12,
+    "gastroenterology": 0.10,
+    "neurology": 0.08,
+}
 
 PAYER_ARCHETYPES = [
     "medicare_ffs",
