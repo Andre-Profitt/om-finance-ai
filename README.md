@@ -4,7 +4,7 @@
 
 > The finance-side operating layer above existing O&M practice-facing tools (claims acceptance, GPO savings, regimen and practice analytics, oncology EHR) — focused on ROI sizing, exception prioritization, model evaluation, auditability, and adoption metrics.
 
-**Status:** Week 2 complete — working end-to-end pipeline with isotonic-calibrated risk scoring, evidence-grounded RAG explainer with honest abstention, simulated override log, and a business-outcome eval harness.
+**Status:** Week 3 complete — 7 exception types (revenue-cycle + contract economics), held-out isotonic calibration, evidence-grounded RAG explainer with honest abstention, simulated override log, business-outcome eval harness, and six Databricks SQL dashboard queries.
 
 **Author:** Andre Profitt · [LinkedIn](https://www.linkedin.com/in/andreprofitt) · built as a public Lead-TPM-Finance-AI portfolio artifact.
 
@@ -32,35 +32,35 @@ Nine stages, all Databricks-native (Delta tables, Unity Catalog-ready schemas, M
 1. **Bronze — CMS ingest.** Real CMS ASP Part B payment rates + NDC-HCPCS crosswalk (sample snapshot committed; production path fetches live quarterly).
 2. **Bronze — synthetic claims.** 5,000 oncology claims across 10 J-codes and four payer archetypes, with a **latent `is_true_error` state** that rules observe _noisily_ (no label leakage).
 3. **Silver — drug economics + claim lines.** ASP-per-mg, billed-to-ASP ratio, NDC-HCPCS validity, paid-to-allowed ratio.
-4. **Gold — rule-based exception candidates.** Deterministic triggers for ASP drift, NDC mismatch, denial, underpayment.
+4. **Gold — rule-based exception candidates.** Seven exception types in priority order: contract-economics (`gpo_340b_rebate_excluded`, `chargeback_validity_fail`, `biosimilar_conversion_miss`) then revenue-cycle (`ndc_hcpcs_mismatch`, `asp_drift`, `underpayment`, `denial`).
 5. **Gold — LightGBM risk scoring + MLflow.** Gradient-boosted risk model on 16 features, tracked + registered with gain-based feature importance as the v1 explainer.
-6. **Gold — isotonic calibration.** Monotonic correction of the raw risk score; the reviewer queue ranks on the calibrated score.
+6. **Gold — isotonic calibration (held-out fold).** Monotonic correction fit on a 20% held-out calibration fold and applied to all scored rows; the reviewer queue ranks on the calibrated score.
 7. **RAG — evidence-grounded explanation.** Dense retrieval (MiniLM) over a corpus of four payer policies and three GPO contracts; every explanation quotes a specific §section with a citation, **or abstains** when no chunk clears the similarity threshold.
 8. **Governance — override log.** Simulated reviewer decisions on the top-100 queue, append-only Parquet, reviewer agreement tracked.
 9. **Eval — business-outcome report.** Three rankings, rules-only baseline, citation precision, abstention rate, calibration comparison.
 
 ## Headline results (5,000 synthetic claims, seed 20260424)
 
-**Ranking strategy matters more than model quality.** Three rankings of the same 695 exception candidates:
+**Ranking strategy matters more than model quality.** Three rankings of the same 1,099 exception candidates across seven exception types:
 
 | Metric                          | P(leakage) | expected recovery | **expected recovery (calibrated)** |
 | ------------------------------- | ---------- | ----------------- | ---------------------------------- |
-| Precision@100                   | 100.0%     | 81.0%             | **93.0%**                          |
-| Dollars captured @ top-100      | $786,674   | $1,768,531        | **$1,882,249**                     |
-| Dollars per reviewer-hour @ 100 | $94,401/h  | $212,224/h        | **$225,870/h**                     |
+| Precision@100                   | 100.0%     | 91.0%             | **91.0%**                          |
+| Dollars captured @ top-100      | $931,682   | $2,135,208        | **$2,135,208**                     |
+| Dollars per reviewer-hour @ 100 | $111,802/h | $256,225/h        | **$256,225/h**                     |
 
-vs. rules-only baseline of $3.77M captured across 57.9 reviewer-hours, the model + calibrated recovery ranking captures **50% of max leakage at 14% of the reviewer effort**.
+vs. rules-only baseline of ~$4.4M captured across ~92 reviewer-hours, the model + calibrated recovery ranking captures **~48% of max leakage at ~14% of the reviewer effort**.
 
-**Evidence grounding:**
+**Evidence grounding (7 exception types over 7 policy / contract documents):**
 
 - Citation precision on explained exceptions: **100%**
-- Abstention rate: **25.5%** — the system refuses to cite when retrieval similarity falls below 0.64
-- Override agreement (top-100 simulated reviewer decisions): **80%**
+- Abstention rate: **13.6%** — the system refuses to cite when retrieval similarity falls below 0.64
+- Override agreement (top-100 simulated reviewer decisions): **75%**
 
 **Model diagnostics:**
 
-- LightGBM valid AUC: 0.907
-- Calibration slope uncalibrated: 1.78 → isotonic: **1.00** (target 0.9–1.1)
+- LightGBM valid AUC: 0.905
+- Calibration slope: 1.78 uncalibrated → **1.38 after held-out isotonic fit** (production-realistic; in-frame fit gives 1.00 but is optimistic)
 
 ## Sample explanation (auditable output)
 
@@ -97,18 +97,19 @@ without a model-generated explanation.
 | Business case        | [docs/roi-model.md](docs/roi-model.md)       | v0 with 2D sensitivity |
 | Product requirements | [docs/prd.md](docs/prd.md)                   | v1                     |
 | Decision log         | [docs/decision-log.md](docs/decision-log.md) | Running                |
+| Roadmap V1/V2/V3     | [docs/roadmap.md](docs/roadmap.md)           | **v1 shipped**         |
+| Dashboards (SQL)     | [dashboards/](dashboards/)                   | **6 queries shipped**  |
 | Governance design    | docs/governance.md                           | Week 4                 |
-| Roadmap V1/V2/V3     | docs/roadmap.md                              | Week 3                 |
 
 ## Build plan (4 weeks)
 
-| Week | Focus              | Status                                                                                   |
-| ---- | ------------------ | ---------------------------------------------------------------------------------------- |
-| 0    | Apply + scaffold   | **Done** — landing page, charter, architecture, ROI                                      |
-| 1    | Hero skeleton      | **Done** — ingest, silver, rules, LightGBM + MLflow, ROI v1                              |
-| 2    | Evidence + eval    | **Done** — RAG + abstention + calibration + overrides + PRD                              |
-| 3    | Contract economics | GPO/chargeback/ASP variance module, 340B scenario, leakage dashboard, roadmap            |
-| 4    | Executive artifact | Practice Acquisition & Performance Model memo, governance reference architecture, polish |
+| Week | Focus              | Status                                                                                                                          |
+| ---- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | Apply + scaffold   | **Done** — landing page, charter, architecture, ROI                                                                             |
+| 1    | Hero skeleton      | **Done** — ingest, silver, rules, LightGBM + MLflow, ROI v1                                                                     |
+| 2    | Evidence + eval    | **Done** — RAG + abstention + calibration + overrides + PRD                                                                     |
+| 3    | Contract economics | **Done** — 340B + biosimilar + chargeback exception types, 6 SQL dashboard queries, roadmap V1/V2/V3, held-out calibration fold |
+| 4    | Executive artifact | Practice Acquisition & Performance Model memo, governance reference architecture, polish                                        |
 
 ## Stack
 

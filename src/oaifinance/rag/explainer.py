@@ -41,6 +41,21 @@ QUERY_TEMPLATES = {
         "on HCPCS {hcpcs}; site-of-care reduced reimbursement, preferred-site "
         "allowable, contractual payment methodology"
     ),
+    "gpo_340b_rebate_excluded": (
+        "GPO rebate accrued on a 340B-purchased drug; duplicate discount between "
+        "340B ceiling price and GPO rebate; exclusion from rebate eligibility for "
+        "covered entity claims"
+    ),
+    "biosimilar_conversion_miss": (
+        "Reference biologic billed when biosimilar is payer-preferred; biosimilar "
+        "substitution required under formulary and conversion addendum; "
+        "reference-product utilization audit"
+    ),
+    "chargeback_validity_fail": (
+        "Chargeback submission with billed-per-unit variance above ASP threshold; "
+        "validation rejection under variance reason code; audit of submission "
+        "requirements"
+    ),
 }
 
 EXPLANATION_TEMPLATES = {

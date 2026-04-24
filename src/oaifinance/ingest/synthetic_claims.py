@@ -57,6 +57,23 @@ CARC_CODES = {
 
 LEAKAGE_DOLLAR_THRESHOLD = 200.0
 
+PRACTICE_340B_SHARE = 0.25  # share of practices that are 340B covered entities
+CLAIM_340B_PURCHASE_GIVEN_ELIGIBLE = 0.55  # share of eligible practice's claims purchased via 340B
+GPO_REBATE_CLAIMED_RATE = 0.88  # share of claims that flow into GPO rebate accrual
+
+COMMERCIAL_PAYERS = ("commercial_national", "commercial_regional")
+BIOSIMILAR_CONVERSION_MISS_BUMP = 0.05  # extra error prob on bios-reference commercial claims
+BIOSIMILAR_MISSED_REBATE_RATE = (
+    0.025  # 2.5% incremental rebate lost on reference when biosim preferred
+)
+GPO_REBATE_CLAWBACK_RATE = 0.020  # ~2% clawback when 340B + rebate double-dip caught
+GPO_CLAWBACK_REALIZED_RATE = (
+    0.55  # share of double-dip events that actually result in clawback (noise)
+)
+BIOSIMILAR_MISS_REALIZED_RATE = (
+    0.48  # share of conversion misses that realize recoverable leakage (noise)
+)
+
 
 def _sample_units(rng: np.random.Generator, hcpcs: str, dosage_per_unit_mg: int) -> int:
     """Clinically plausible total-unit count for a single administration."""
@@ -101,16 +118,27 @@ def generate(
     all_ndcs = np.array(crosswalk["ndc_code"].to_list())
     payers = np.array(PAYER_ARCHETYPES)
 
+    practice_ids = [f"PR-{i:03d}" for i in range(1, 21)]
+    practice_340b = {pid: (rng.random() < PRACTICE_340B_SHARE) for pid in practice_ids}
+
     rows = []
     for i in range(n_claims):
         hcpcs = str(hcpcs_list[rng.integers(0, len(hcpcs_list))])
         dosage_per_unit, asp_rate, is_bios_ref = asp_map[hcpcs]
         payer = str(payers[rng.integers(0, len(payers))])
+        practice_id = str(practice_ids[rng.integers(0, len(practice_ids))])
+        is_340b_practice = bool(practice_340b[practice_id])
+        is_340b_purchased = is_340b_practice and rng.random() < CLAIM_340B_PURCHASE_GIVEN_ELIGIBLE
+        gpo_rebate_claimed = rng.random() < GPO_REBATE_CLAIMED_RATE
+        gpo_340b_double_dip = is_340b_purchased and gpo_rebate_claimed
 
         units = _sample_units(rng, hcpcs, dosage_per_unit)
 
         base_error = PAYER_BASE_ERROR[payer] + (0.04 if is_bios_ref else 0.0)
+        if is_bios_ref and payer in COMMERCIAL_PAYERS:
+            base_error += BIOSIMILAR_CONVERSION_MISS_BUMP
         is_true_error = rng.random() < base_error
+        biosimilar_conversion_miss = is_true_error and is_bios_ref and payer in COMMERCIAL_PAYERS
 
         billed_jitter = rng.normal(1.18, 0.06)
         billed_per_unit = asp_rate * max(1.0, billed_jitter)
@@ -179,6 +207,11 @@ def generate(
         else:
             leakage_amount = 0.0
 
+        if biosimilar_conversion_miss and rng.random() < BIOSIMILAR_MISS_REALIZED_RATE:
+            leakage_amount += allowed_total * BIOSIMILAR_MISSED_REBATE_RATE
+        if gpo_340b_double_dip and rng.random() < GPO_CLAWBACK_REALIZED_RATE:
+            leakage_amount += allowed_total * GPO_REBATE_CLAWBACK_RATE
+
         true_leakage = leakage_amount > LEAKAGE_DOLLAR_THRESHOLD
 
         service_date = np.datetime64("2026-01-01") + np.timedelta64(int(rng.integers(0, 90)), "D")
@@ -187,7 +220,7 @@ def generate(
             {
                 "claim_id": f"CLM-{i:06d}",
                 "service_date": str(service_date),
-                "practice_id": f"PR-{int(rng.integers(1, 21)):03d}",
+                "practice_id": practice_id,
                 "hcpcs_code": hcpcs,
                 "ndc_code": ndc,
                 "payer": payer,
@@ -200,6 +233,11 @@ def generate(
                 "carc_code": carc,
                 "asp_rate_at_service": float(asp_rate),
                 "is_biosimilar_reference": bool(is_bios_ref),
+                "is_340b_practice": bool(is_340b_practice),
+                "is_340b_purchased": bool(is_340b_purchased),
+                "gpo_rebate_claimed": bool(gpo_rebate_claimed),
+                "gpo_340b_double_dip": bool(gpo_340b_double_dip),
+                "biosimilar_conversion_miss": bool(biosimilar_conversion_miss),
                 "_true_leakage_amount": round(float(leakage_amount), 2),
                 "_true_leakage": bool(true_leakage),
             }

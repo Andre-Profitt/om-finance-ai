@@ -52,3 +52,7 @@ if __name__ == "__main__":
     print(f"rows={len(df)}")
     print(f"denied={df['is_denied'].sum()}")
     print(f"ndc_invalid={(~df['ndc_hcpcs_valid']).sum()}")
+    print(f"340b_practice={df['is_340b_practice'].sum()}")
+    print(f"340b_purchased={df['is_340b_purchased'].sum()}")
+    print(f"double_dip={df['gpo_340b_double_dip'].sum()}")
+    print(f"biosim_miss={df['biosimilar_conversion_miss'].sum()}")

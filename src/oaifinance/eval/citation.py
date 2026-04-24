@@ -42,6 +42,32 @@ GOLDEN_CITATIONS: dict[str, set[tuple[str, str]]] = {
         ("gpo_chargeback_validation", "Validation Logic"),
         ("medicare_lcd_oncology_iv_biologics", "J-code Billing and Units"),
     },
+    "gpo_340b_rebate_excluded": {
+        ("gpo_master_oncology_rebate", "Exclusions and Exceptions"),
+        ("gpo_master_oncology_rebate", "Rebate Percentages"),
+        ("medicaid_managed_specialty_pharmacy", "340B Interaction"),
+    },
+    "biosimilar_conversion_miss": {
+        (
+            "commercial_national_nccn_compendium",
+            "Biosimilar Substitution and Reference Product Requirements",
+        ),
+        ("gpo_biosimilar_conversion", "Purpose"),
+        ("gpo_biosimilar_conversion", "Conversion Targets and Incentives"),
+        ("gpo_biosimilar_conversion", "Reference-Product Audit"),
+        ("gpo_biosimilar_conversion", "Data Reporting"),
+        (
+            "commercial_regional_prior_auth_oncology",
+            "Formulary Tier and Step Therapy",
+        ),
+    },
+    "chargeback_validity_fail": {
+        ("gpo_chargeback_validation", "Validation Logic"),
+        ("gpo_chargeback_validation", "Submission Requirements"),
+        ("gpo_chargeback_validation", "Scope"),
+        ("gpo_master_oncology_rebate", "Exclusions and Exceptions"),
+        ("commercial_national_nccn_compendium", "Billed Amount Review"),
+    },
 }
 
 
