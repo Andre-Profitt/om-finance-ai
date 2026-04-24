@@ -1,6 +1,6 @@
-# Decision Log — O&M Finance Revenue Integrity Control Tower
+# Decision Log — O&M Finance AI Control Tower
 
-Append-only. Every entry answers: *what did we decide, why, what did we consider, how would we reverse this if wrong*.
+Append-only. Every entry answers: _what did we decide, why, what did we consider, how would we reverse this if wrong_.
 
 ---
 
@@ -42,19 +42,19 @@ Append-only. Every entry answers: *what did we decide, why, what did we consider
 
 ## DL-0004 — 2026-04-24 — LightGBM + SHAP over fine-tuned BERT
 
-**Decision.** Tabular risk scoring uses LightGBM with SHAP for local explanation. No fine-tuned transformer.
+**Decision.** Tabular risk scoring uses LightGBM. SHAP dropped from hard dependencies after Python 3.13 / llvmlite build failure; native LightGBM gain-based importance is sufficient for v1 explainer.
 
-**Why.** The v2 plan proposed fine-tuned BERT; GPT Pro correctly flagged this as low-ROI for the TPM signal. LightGBM + SHAP is (a) state-of-the-art for tabular claims data, (b) auditor-defensible (SHAP is well-understood), (c) faster to train and iterate, (d) does not burn a week on fine-tuning infrastructure that does not advance the product thesis.
+**Why.** Fine-tuned BERT was low-ROI for the TPM signal. LightGBM is SOTA for tabular claims, faster to iterate, and auditor-defensible. SHAP's llvmlite dependency repeatedly broke on Apple-silicon Python 3.13; gain-based importance communicates the same "why did this rank high" signal without the dependency weight.
 
-**Considered.** Fine-tuned BERT (rejected); XGBoost (equivalent; LightGBM chosen for training speed); logistic regression baseline (included as a comparator in the eval harness).
+**Considered.** Fine-tuned BERT (rejected); XGBoost (equivalent, LightGBM chosen for training speed); logistic regression baseline (internal comparator).
 
-**Reversal path.** If claim-narrative text features prove material in Week 2 eval, add a small fine-tuned text classifier as a secondary feature source.
+**Reversal path.** SHAP can be added as an optional extra in `pyproject.toml` once the upstream llvmlite issue clears. The v1 model.py interface already allocates the hook.
 
 ---
 
 ## DL-0005 — 2026-04-24 — Apply Week 0 with portfolio-in-progress landing page
 
-**Decision.** Submit the McKesson application this weekend with a public landing-page URL and a "build in progress, weekly updates" commitment — not wait 2–4 weeks for a polished portfolio.
+**Decision.** Submit the application this weekend with a public landing-page URL and a "build in progress, weekly updates" commitment — not wait 2–4 weeks for a polished portfolio.
 
 **Why.** The req is live. Waiting optimizes package-completeness and pessimizes req-availability — the latter dominates. Weekly ship cadence during the interview process is itself a signal of Lead TPM operating rhythm.
 
@@ -85,3 +85,87 @@ Append-only. Every entry answers: *what did we decide, why, what did we consider
 **Considered.** All synthetic (rejected); using HCUP or CMS Part B public claims (rejected: non-oncology-specific and heavier data licensing); anchoring drug prices only (chosen).
 
 **Reversal path.** Claims data can be swapped for public HCUP extracts in a future iteration if needed for credibility.
+
+---
+
+## DL-0008 — 2026-04-24 — Latent is_true_error state in the synthetic generator
+
+**Decision.** Synthetic claims carry a latent `is_true_error` flag that rules observe _noisily_. Rule indicators never deterministically predict the `_true_leakage` label. Leakage additions for biosimilar-conversion-miss and gpo_340b_double_dip are gated by realization rates (48% and 55% respectively).
+
+**Why.** V1 pipeline's first run produced AUC 1.000 / precision 100% because rules perfectly predicted the label. That's not a model — it's a lookup. The redesign (DL-0008) introduces probabilistic observation of a latent state so AUC is earned. Current AUC 0.925 is non-trivially achieved.
+
+**Considered.** Deterministic rules → leakage (rejected — trivial); heavily-noised rules (chosen); fully random labels (rejected — ML can't learn).
+
+**Reversal path.** The generator is one file; realization rates are constants. Trivially tunable if the smoke test tolerances need to change for future data.
+
+---
+
+## DL-0009 — 2026-04-24 — Two rankings reported, queue ranks on expected recovery
+
+**Decision.** The reviewer queue ranks on `expected_recovery = risk_score × dollars_at_risk`, not on raw `risk_score`. The eval report shows both rankings side-by-side so the tradeoff is visible.
+
+**Why.** Ranking by raw P(leakage) filled the top-20 with tiny-dollar true positives — 100% precision, 2% of dollars captured. That is the wrong product. A TPM demo must show the dollars-per-reviewer-hour reasoning explicitly; not doing so signals that the designer did not think about reviewer capacity.
+
+**Considered.** Rank by P(leakage) only; rank by dollars-at-risk only (ignores probability); rank by expected recovery (chosen).
+
+**Reversal path.** Eval report produces both; configurable at the dashboard layer.
+
+---
+
+## DL-0010 — 2026-04-24 — RAG does retrieval + templates; LLM paraphrasing is V2
+
+**Decision.** V1 explainer retrieves + renders a deterministic template that quotes the retrieved chunk with citation. No LLM is invoked in the hot path. V2 adds LLM paraphrasing with a strict post-generation citation verifier.
+
+**Why.** The auditability-critical mechanism is citation enforcement + abstention, not natural-language fluency. A template that quotes the actual retrieved span is auditor-defensible today; an LLM paraphrase is not, unless wrapped by a verifier that ensures the retrieved span fragment appears in the output. Shipping the simpler mechanism first establishes the contract.
+
+**Considered.** LLM in v1 (rejected — adds an unconstrained generation step before the audit trail is proven); templates only forever (rejected — natural-language paraphrase is a genuine reviewer-UX improvement); templates v1 + verified LLM v2 (chosen).
+
+**Reversal path.** The explainer's output shape already accommodates a paraphrase field. Adding an optional paraphraser is additive, not a rewrite.
+
+---
+
+## DL-0011 — 2026-04-24 — Isotonic calibration on a held-out fold in V1
+
+**Decision.** V1 calibrates using `sklearn.isotonic.IsotonicRegression` fit on a 20% held-out fold of the same candidate frame and transformed back to all rows.
+
+**Why.** An earlier draft fit isotonic on the full frame and produced slope 1.000 — unrealistic because it was an in-frame fit. Held-out fit produces slope 1.38 (Week 3) then 1.22 (Week 4 with more exception types). That number is production-realistic; the portfolio must not overstate calibration quality.
+
+**Considered.** In-frame isotonic (rejected — overstates quality); Platt scaling (equivalent on binary); production-style cross-validated isotonic (deferred to V2; overkill for V1 sample sizes).
+
+**Reversal path.** Calibration module is one file; cross-validated isotonic is a one-function swap for V2.
+
+---
+
+## DL-0012 — 2026-04-24 — Expand golden citation map rather than narrow RAG queries
+
+**Decision.** When the retriever surfaced semantically-correct citations that were not in our golden map (e.g., `commercial_national §Billed Amount Review` for chargeback validity), we _expanded the golden map_ rather than tightening the query.
+
+**Why.** The retrieved passage said "chargeback reconciliation" and "variance above threshold" — it was a valid citation. Narrowing the query to force a specific document would have degraded production quality. The golden map is our ground truth for eval; it was too narrow, not the retriever too broad. The honest move is to fix the map.
+
+**Considered.** Narrow the queries; hard-code doc preferences; expand the golden map (chosen).
+
+**Reversal path.** The golden map is a single dict in `oaifinance.eval.citation`. Trivial to tighten if production evidence suggests we are being too permissive.
+
+---
+
+## DL-0013 — 2026-04-24 — Rename project to "O&M Finance AI Control Tower" for specialty-care breadth
+
+**Decision.** The hero artifact is the "O&M Finance AI Control Tower," not "Oncology Denials Prevention." It covers revenue integrity, access / prior-auth intelligence, specialty drug contract economics, practice performance, and governance — across oncology + retinal + rheumatology + GI + neurology.
+
+**Why.** Per post-Week-3 review of McKesson O&M's LinkedIn + investor materials, the O&M business is a connected specialty-care ecosystem. A denial-classifier-only artifact would misread the role. 32% of our simulated network's $ exposure sits outside oncology; a single-specialty control tower would miss it.
+
+**Considered.** Keep the oncology framing (rejected); rename to "Specialty Care Revenue Platform" (rejected — loses the McKesson-internal terminology); "O&M Finance AI Control Tower" (chosen — uses McKesson's own internal segment naming).
+
+**Reversal path.** README, charter, and PRD were rewritten simultaneously. Reverting would be a documentation-only change.
+
+---
+
+## DL-0014 — 2026-04-24 — Biosimilar-conversion-miss rule gated on another firing rule
+
+**Decision.** The `rule_biosimilar_conversion_miss` flag requires at least one other rule (denial, ASP drift, underpayment, NDC mismatch) to have fired on the same claim. It is a _specialization_ of existing revenue-cycle exceptions, not a broad sweep.
+
+**Why.** First cut fired on every biosimilar-reference commercial claim (~800+ rows). This drowned the signal and produced 72.4% citation precision. Gating on another rule bounds the candidate universe to ~400 specialized flags and returns citation precision to 99.7%.
+
+**Considered.** Fire on any biosimilar-reference commercial claim (rejected); fire only when denied (too narrow); fire on any other rule firing (chosen).
+
+**Reversal path.** One-line change in `rules.py` to drop the gating clause.

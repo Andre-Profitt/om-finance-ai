@@ -12,6 +12,7 @@ from oaifinance.eval.report import generate as generate_eval
 from oaifinance.governance import override_log
 from oaifinance.ingest import cms_asp, ndc_hcpcs, synthetic_claims
 from oaifinance.rag import explainer as rag_explainer
+from oaifinance.rag import paraphraser as rag_paraphraser
 from oaifinance.rag import retriever as rag_retriever
 from oaifinance.scoring import calibration, model, rules
 from oaifinance.silver import claim_lines, drug_economics
@@ -59,6 +60,7 @@ def run(
     scored = calibration.calibrate(scored)
     console.print("  calibrated: risk_score → risk_score_calibrated")
 
+    explained = None
     if not skip_rag:
         console.rule("[bold cyan]7. RAG — evidence-grounded explanation")
         retriever = rag_retriever.build()
@@ -68,14 +70,18 @@ def run(
             f"abstained: {int(explained['abstained'].sum())}"
         )
 
+        console.rule("[bold cyan]7b. RAG — optional LLM paraphrase (feature-flagged)")
+        explained = rag_paraphraser.paraphrase_queue(explained)
+        status = explained.group_by("paraphrase_status").len().sort("len", descending=True)
+        for row in status.iter_rows(named=True):
+            console.print(f"  {row['paraphrase_status']}: {row['len']}")
+
         console.rule("[bold cyan]8. Governance — simulated override log")
         log = override_log.simulate(explained, top_k=100)
         agree_rate = float(
             log.filter(log["override_id"].str.starts_with("OVR-"))["agreed_with_model"].mean()
         )
         console.print(f"  overrides logged: {len(log)}  agreed_with_model: {agree_rate:.0%}")
-    else:
-        explained = None
 
     console.rule("[bold cyan]9. Eval — business-outcome report")
     report = generate_eval(scored, all_claims=claims, explained=explained)

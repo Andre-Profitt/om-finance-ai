@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.11.7"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Run smoke test
+        run: uv run pytest tests/ -q
+        env:
+          OAI_ENABLE_LLM_PARAPHRASE: "0"
+
+      - name: Run end-to-end pipeline
+        run: uv run oai-finance build --n-claims 1000
+
+      - name: Run practice analysis
+        run: uv run oai-finance practice-analysis
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pipeline-artifacts
+          path: |
+            artifacts/
+            data/gold/
+          retention-days: 7
