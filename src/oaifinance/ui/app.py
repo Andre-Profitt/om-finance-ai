@@ -1,198 +1,208 @@
-"""Streamlit reviewer-queue mock.
+"""Home — O&M Finance AI Control Tower.
 
-Run: `make reviewer-ui` (or `uv run streamlit run src/oaifinance/ui/app.py`)
-
-Reads the pipeline outputs from `data/gold/` and renders the top-k reviewer
-queue with cited explanations, abstention flags, and mock disposition
-actions. Not a production UI — a product mock that shows what the reviewer
-workflow looks like end-to-end on synthetic data.
+Multi-page Streamlit application. Pages discoverable via the sidebar:
+  1. Reviewer Queue
+  2. Network View
+  3. Model Ops
+  4. Audit Trail
 """
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import polars as pl
 import streamlit as st
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-GOLD = REPO_ROOT / "data" / "gold"
-SCORED = GOLD / "scored_exceptions.parquet"
-EXPLAINED = GOLD / "explained_exceptions.parquet"
-PRACTICE = GOLD / "practice_performance.parquet"
-
-
-@st.cache_data(show_spinner=False)
-def _load() -> dict[str, pl.DataFrame]:
-    frames: dict[str, pl.DataFrame] = {}
-    if SCORED.exists():
-        frames["scored"] = pl.read_parquet(SCORED)
-    if EXPLAINED.exists():
-        frames["explained"] = pl.read_parquet(EXPLAINED)
-    if PRACTICE.exists():
-        frames["practice"] = pl.read_parquet(PRACTICE)
-    return frames
-
-
-def _dollars(x: float) -> str:
-    if abs(x) >= 1_000_000:
-        return f"${x / 1_000_000:.2f}M"
-    if abs(x) >= 1_000:
-        return f"${x / 1_000:.1f}K"
-    return f"${x:,.0f}"
+from oaifinance import __version__
+from oaifinance.ui import components as ui
+from oaifinance.ui import data as ud
+from oaifinance.ui import styles
 
 
 def main() -> None:
-    st.set_page_config(page_title="O&M Finance AI Control Tower", layout="wide")
-    st.title("O&M Finance AI Control Tower — Reviewer Queue")
-    st.caption(
-        "Mock reviewer workflow on synthetic data. Drug prices anchored to public CMS ASP. No PHI."
+    st.set_page_config(
+        page_title="O&M Finance AI Control Tower",
+        layout="wide",
+        initial_sidebar_state="expanded",
     )
-
-    frames = _load()
-    if "scored" not in frames or "explained" not in frames:
-        st.error("Pipeline outputs not found under data/gold/. Run `make demo` first.")
-        return
-
-    scored = frames["scored"]
-    explained = frames["explained"]
-    merged = scored.join(
-        explained.select(
-            "claim_id",
-            "citation_doc_id",
-            "citation_section",
-            "citation_score",
-            "explained",
-            "abstained",
-            "explanation_text",
-        ),
-        on="claim_id",
-        how="left",
-    )
-
-    rank_col = (
-        "expected_recovery_calibrated"
-        if "expected_recovery_calibrated" in merged.columns
-        else "expected_recovery"
-    )
+    styles.inject()
 
     with st.sidebar:
-        st.header("Filters")
-        specialties = sorted(merged["practice_specialty"].unique().to_list())
-        selected_specialties = st.multiselect(
-            "Practice specialty", specialties, default=specialties
+        st.markdown(
+            """
+<div style="padding: 0.5rem 0 1rem 0; border-bottom: 1px solid var(--color-border); margin-bottom: 1rem;">
+  <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted);">Product</div>
+  <div style="font-size: 0.95rem; font-weight: 600; color: var(--color-text); margin-top: 0.15rem;">O&M Finance AI<br>Control Tower</div>
+  <div style="font-size: 0.7rem; color: var(--color-text-faint); margin-top: 0.25rem;">v1 · synthetic data</div>
+</div>
+""",
+            unsafe_allow_html=True,
         )
-        exception_types = sorted(merged["exception_type"].unique().to_list())
-        selected_types = st.multiselect("Exception type", exception_types, default=exception_types)
-        top_k = st.slider("Queue size (top-k)", min_value=20, max_value=200, value=50, step=10)
-        show_abstained_only = st.checkbox("Abstained only")
 
-    filtered = merged.filter(
-        pl.col("practice_specialty").is_in(selected_specialties)
-        & pl.col("exception_type").is_in(selected_types)
-    )
-    if show_abstained_only:
-        filtered = filtered.filter(pl.col("abstained"))
+    frames = ud.load_all()
+    if frames.scored is None or frames.explained is None:
+        ui.page_header(
+            "O&M Finance AI Control Tower",
+            "Pipeline outputs not found — run the demo to populate this view.",
+        )
+        ui.empty_state(
+            "No pipeline output detected.",
+            "Run `make demo` to ingest the sample data, score exceptions, and "
+            "produce the explained queue. Then return to this page.",
+        )
+        return
 
-    queue = filtered.sort(rank_col, descending=True).head(top_k)
+    ranked_col = ud.rank_col(frames.scored)
+    n_exceptions = len(frames.scored)
+    total_at_risk = float(frames.scored["dollars_at_risk"].sum())
+    expected_recovery = float(frames.scored[ranked_col].sum())
+    n_practices = int(len(frames.practice)) if frames.practice is not None else 0
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Items in queue", f"{len(queue):,}")
-    c2.metric(
-        "Total dollars at risk",
-        _dollars(float(queue["dollars_at_risk"].sum())) if len(queue) else "$0",
-    )
-    c3.metric(
-        "Expected recovery",
-        _dollars(float(queue[rank_col].sum())) if len(queue) else "$0",
-    )
-    c4.metric(
-        "Abstention rate",
-        f"{float(queue['abstained'].mean() * 100) if len(queue) else 0:.1f}%",
+    model_run_id = (
+        frames.scored["model_run_id"][0] if "model_run_id" in frames.scored.columns else None
     )
 
-    st.subheader("Reviewer queue")
-    display_cols = [
-        "claim_id",
-        "practice_id",
-        "practice_specialty",
-        "payer",
-        "hcpcs_code",
-        "exception_type",
-        "dollars_at_risk",
-        "risk_score_calibrated",
-        rank_col,
-        "citation_doc_id",
-        "citation_section",
-        "abstained",
-    ]
-    display_cols = [c for c in display_cols if c in queue.columns]
-    st.dataframe(queue.select(display_cols), hide_index=True, use_container_width=True)
+    ui.page_header(
+        "Control Tower — overview",
+        "Finance-side operating layer for oncology + multispecialty revenue integrity, access, and contract economics.",
+        run_id=str(model_run_id) if model_run_id else None,
+        n_rows=n_exceptions,
+    )
 
-    st.subheader("Drill-in")
-    if len(queue) > 0:
-        claim_options = queue["claim_id"].to_list()
-        selected = st.selectbox("Claim", claim_options, index=0)
-        row = merged.filter(pl.col("claim_id") == selected).row(0, named=True)
-
-        left, right = st.columns([2, 1])
-        with left:
-            st.markdown(f"### {row['claim_id']}  ·  {row['exception_type']}")
-            st.write(
-                f"**{row['practice_id']}** ({row['practice_specialty']})  ·  "
-                f"**{row['payer']}**  ·  HCPCS `{row['hcpcs_code']}`  ·  NDC `{row['ndc_code']}`"
-            )
-            st.markdown("#### Explanation")
-            text = row.get("explanation_text") or "(no explanation produced)"
-            if row.get("abstained"):
-                st.warning(text)
-            else:
-                st.info(text)
-
-            if row.get("citation_doc_id"):
-                st.caption(
-                    f"Cited: **{row['citation_doc_id']}** § {row['citation_section']}"
-                    f"  ·  similarity {float(row.get('citation_score') or 0):.3f}"
-                )
-
-            st.markdown("#### Mock disposition")
-            b1, b2, b3 = st.columns(3)
-            if b1.button("Approve / submit"):
-                st.success(
-                    "(mock) override_log would write decision=approve with rationale=agree_submit"
-                )
-            if b2.button("Escalate to coding"):
-                st.success(
-                    "(mock) override_log would write decision=escalate with rationale=escalate_coding_team"
-                )
-            if b3.button("Reject"):
-                st.success(
-                    "(mock) override_log would write decision=reject with rationale=disagree_legitimate_claim"
-                )
-
-        with right:
-            st.markdown("#### Risk + $")
-            st.metric("Dollars at risk", _dollars(float(row["dollars_at_risk"])))
-            st.metric(
-                "Calibrated risk",
-                f"{float(row.get('risk_score_calibrated') or 0):.3f}",
-            )
-            st.metric(
+    ui.kpi_grid(
+        [
+            (
+                "Exception candidates",
+                f"{n_exceptions:,}",
+                "across 8 priority-ordered types",
+            ),
+            (
+                "Total dollars at risk",
+                ui.fmt_dollars(total_at_risk),
+                "ground truth from the synthetic generator",
+            ),
+            (
                 "Expected recovery",
-                _dollars(float(row.get(rank_col) or 0)),
-            )
-            st.caption(
-                f"Model run: `{row.get('model_run_id', '—')[:10] if row.get('model_run_id') else '—'}…`"
+                ui.fmt_dollars(expected_recovery),
+                "calibrated risk × dollars at risk",
+            ),
+            (
+                "Network practices",
+                str(n_practices) if n_practices else "—",
+                "oncology + multispecialty",
+            ),
+        ]
+    )
+
+    ui.section("Quick navigation")
+    nav_cols = st.columns(4)
+    nav_targets = [
+        (
+            "Reviewer Queue",
+            "Top-100 by expected recovery, with cited explanations and abstention pills.",
+        ),
+        (
+            "Network View",
+            "Per-practice exposure, exception mix, and the auto-selected acquisition target.",
+        ),
+        ("Model Ops", "Calibration health, abstention trends, override agreement."),
+        ("Audit Trail", "Append-only override log with model and prompt lineage."),
+    ]
+    for col, (title, blurb) in zip(nav_cols, nav_targets, strict=True):
+        with col:
+            st.markdown(
+                f"""
+<div class="kpi-card" style="height: 100%;">
+  <div class="label">Page</div>
+  <div class="value" style="font-size: 1rem; font-weight: 600;">{title}</div>
+  <div class="footnote">{blurb}</div>
+</div>
+""",
+                unsafe_allow_html=True,
             )
 
-    if "practice" in frames:
-        with st.expander("Network view — per-practice exposure"):
-            st.dataframe(
-                frames["practice"].sort("expected_recovery_calibrated", descending=True),
-                hide_index=True,
-                use_container_width=True,
+    ui.section("Headline metrics")
+    if frames.eval_report:
+        report = frames.eval_report
+        by_cal = report.get("by_expected_recovery_calibrated") or report.get("by_expected_recovery")
+        precision_at_100 = by_cal.get("precision_at_100") if by_cal else None
+        dollars_at_100 = by_cal.get("dollars_captured_at_100") if by_cal else None
+        per_hour = by_cal.get("dollars_per_reviewer_hour_at_100") if by_cal else None
+        slope_cal = report.get("calibration_slope_calibrated")
+        cit_p = report.get("citation_precision")
+        abst = report.get("abstention_rate")
+
+        ui.kpi_grid(
+            [
+                (
+                    "Precision @ top-100",
+                    ui.fmt_pct(precision_at_100, places=1),
+                    "ranked by calibrated expected recovery",
+                ),
+                (
+                    "Dollars captured @ top-100",
+                    ui.fmt_dollars(dollars_at_100),
+                    "real recoverable leakage in the top of the queue",
+                ),
+                (
+                    "Dollars per reviewer-hour",
+                    ui.fmt_dollars(per_hour) + "/h" if per_hour else "—",
+                    "value yield per analyst hour at top-100",
+                ),
+                (
+                    "Citation precision",
+                    ui.fmt_pct(cit_p, places=1),
+                    f"abstention rate {ui.fmt_pct(abst, places=1)}",
+                ),
+            ],
+            accent_first=False,
+        )
+        ui.section("Model calibration")
+        slope_band = (
+            "high"
+            if slope_cal is not None and (slope_cal < 0.85 or slope_cal > 1.15)
+            else "explained"
+        )
+        st.markdown(
+            f"Calibrated slope target band <strong>0.85 – 1.15</strong>. Current: "
+            f"<strong>{slope_cal:.3f}</strong> {ui.status_pill(slope_band, slope_band)}."
+            if slope_cal is not None
+            else "Calibration data not available.",
+            unsafe_allow_html=True,
+        )
+    else:
+        ui.empty_state(
+            "Eval report not found.",
+            "Run `make demo` once to produce `artifacts/eval_report.json`, then refresh.",
+        )
+
+    if frames.practice is not None and len(frames.practice) > 0:
+        ui.section("Network exposure by specialty")
+        spec = (
+            frames.practice.group_by("practice_specialty")
+            .agg(
+                pl.col("expected_recovery_calibrated").sum().alias("expected_recovery"),
+                pl.col("total_at_risk").sum().alias("total_at_risk"),
+                pl.col("n_exceptions").sum().alias("n_exceptions"),
+                pl.len().alias("n_practices"),
             )
+            .sort("expected_recovery", descending=True)
+        )
+        st.dataframe(
+            spec,
+            hide_index=True,
+            use_container_width=True,
+            column_config={
+                "practice_specialty": st.column_config.TextColumn("Specialty"),
+                "n_practices": st.column_config.NumberColumn("Practices", format="%d"),
+                "n_exceptions": st.column_config.NumberColumn("Exceptions", format="%d"),
+                "total_at_risk": st.column_config.NumberColumn("Dollars at risk", format="$%.0f"),
+                "expected_recovery": st.column_config.NumberColumn(
+                    "Expected recovery", format="$%.0f"
+                ),
+            },
+        )
+
+    ui.app_footer(version=__version__, model_run_id=str(model_run_id) if model_run_id else None)
 
 
-if __name__ == "__main__":
-    main()
+main()
