@@ -63,3 +63,6 @@ secrets/
 
 # Logs
 *.log
+
+# Personal application materials — local only, not pushed
+docs/private/
