@@ -4,7 +4,7 @@
 
 > The finance-side operating layer above O&M's existing practice-facing capabilities (Glide Health claims acceptance, CoverMyMeds access automation, Onmark GPO savings, Regimen Profiler / Practice Insights analytics, iKnowMed EHR, Ontada data). Focused on ROI sizing, exception prioritization, evidence-grounded explanation, controllership audit trail, and adoption metrics — so practices can reduce administrative burden, accelerate access, and keep providers focused on patients.
 
-**Status:** V1 shipped (Weeks 0–4 + polish). Working end-to-end pipeline: eight exception types across revenue-cycle + access + contract economics; multispecialty coverage across five specialties; cross-validated isotonic calibration; evidence-grounded RAG with honest abstention; flag-gated LLM paraphrase layer with strict citation contract; simulated override log; per-practice performance + acquisition model; governance reference architecture; eight Databricks SQL dashboard queries; Streamlit reviewer-queue mock; CI green on every push; refinement plan covering V1 → V4 in [docs/refinement-plan.md](docs/refinement-plan.md).
+**Status:** V1.1 shipped (Weeks 0–4 + polish + V2 hero features). Working end-to-end pipeline: **ten** exception types across revenue-cycle + access + contract economics; multispecialty coverage across five specialties; 5-fold CV isotonic calibration; evidence-grounded RAG with honest abstention; flag-gated LLM paraphrase layer with strict citation contract; simulated override log; per-practice performance + acquisition model; governance reference architecture (with V2 retrospective-label schemas + Unity Catalog RLS pattern); eight Databricks SQL dashboard queries + six drift alarms + governance DDL; Streamlit reviewer-queue mock; CI runs tests + end-to-end pipeline + practice analysis on every push (lint + security advisory). See **[docs/current-results.md](docs/current-results.md)** for canonical headline numbers and **[docs/refinement-plan.md](docs/refinement-plan.md)** for what shipped vs. parked V2/V3 backlog.
 
 **Author:** Andre Profitt · [LinkedIn](https://www.linkedin.com/in/andreprofitt) · built as a public Lead-TPM-Finance-AI portfolio artifact.
 
@@ -24,7 +24,7 @@ make mlflow-ui                        # browse model runs
 make test                             # smoke test
 ```
 
-The `make demo` command runs a nine-stage Databricks-native pipeline and produces `artifacts/eval_report.md`, calibration and capture-curve plots, an MLflow-registered LightGBM model, isotonic-calibrated scores, evidence-grounded per-exception explanations, and a simulated override log. The `practice-analysis` CLI produces a network + target-practice + 100-day integration projection feeding the executive memo at `docs/practice-performance-memo.md`.
+The `make demo` command runs the full nine-stage pipeline locally on Parquet (Databricks-ready: Delta + Unity Catalog schemas + MLflow + Asset Bundle skeleton ship in the repo, but a production pilot would still need workspace-specific validation, access controls, and conversion testing against the target Azure Databricks environment). It produces `artifacts/eval_report.md`, calibration and capture-curve plots, an MLflow-registered LightGBM model, isotonic-calibrated scores, evidence-grounded per-exception explanations, and a simulated override log. The `practice-analysis` CLI produces a network + target-practice + 100-day integration projection feeding the executive memo at `docs/practice-performance-memo.md`.
 
 ## What the Control Tower does
 
@@ -66,50 +66,39 @@ Nine stages, Databricks-native (Delta, Unity Catalog-ready schemas, MLflow track
 
 ## Headline results (5,000 synthetic claims, seed 20260424)
 
-**Reviewer-queue rankings on ~1,750 exception candidates across 10 types:**
+> **Single source of truth: [`docs/current-results.md`](docs/current-results.md).** If a number in this README and one in another doc disagree, the canonical file wins. Run `make demo` to regenerate.
 
-| Metric                       | P(leakage) | expected recovery | **expected recovery (calibrated)** |
-| ---------------------------- | ---------- | ----------------- | ---------------------------------- |
-| Precision@100                | 100.0%     | 96.0%             | **96.0%**                          |
-| Dollars captured @ top-100   | $1.21M     | $2.37M            | **$2.37M**                         |
-| Citation precision (overall) | —          | —                 | **100.0%**                         |
-| Abstention rate              | —          | —                 | **15.1%**                          |
+**Reviewer-queue rankings on 2,722 exception candidates across 10 types:**
 
-**Network view (20 practices, synthesized from the same run):**
+| Metric                                 | Calibrated expected-recovery ranking |
+| -------------------------------------- | ------------------------------------ |
+| Precision @ top-100                    | **96.0%**                            |
+| Dollars captured @ top-100             | **$2,323,674**                       |
+| Citation precision                     | **100.0%**                           |
+| Abstention rate                        | **15.1%**                            |
+| Calibration slope (5-fold CV isotonic) | **0.985** (target band 0.85–1.15)    |
 
-- Total dollars at risk: **$7.17M**
-- Expected recovery: **$5.84M**
-- Access delay cost: **$31.1K**
-- Specialty $ mix: oncology 68% · gastroenterology 19% · neurology 7% · retinal 4% · rheumatology 2%
+**Practice-level integration model (auto-selected target practice):**
 
-**Target-practice integration model (`PR-012`, oncology, non-340B, auto-selected):**
+A 100-day plan with five sequenced initiatives is computed by `oaifinance.practice.performance` against the calibrated exception queue. The reviewer-cost figures are minutes-per-item × loaded reviewer hourly only — they exclude implementation cost, SME time, controllership review, and integration cost. See `docs/practice-performance-memo.md` for the full executive memo (synthetic data; not a forecast).
 
-- 250 claims, 53 exceptions, 21% exception rate
-- $626.9K at risk, $543.2K expected recovery
-- 100-day plan: five initiatives → $322.2K projected recovery, $292 reviewer cost, **4.5-month modeled payback**
+**Model diagnostics (internal):**
 
-**Evidence grounding (8 exception types, 8 policy / contract documents):**
-
-- Citation precision on explained exceptions: **99.7%**
-- Abstention rate: **26.8%** — refuses to cite when retrieval < 0.64 similarity
-- Override agreement (simulated top-100): **65%**
-
-**Model diagnostics:**
-
-- LightGBM valid AUC: 0.925
-- Calibration slope: 1.12 uncalibrated → **0.99 after 5-fold CV isotonic** (within the reliability target band of 0.85–1.15)
+LightGBM valid AUC 0.934; logged to MLflow as a debug metric only — never the headline.
 
 ## Sample output (auditable)
+
+> Synthetic claim. Cited document is from the **mock payer-policy corpus** in `data/samples/payer_policies/` — patterned on real Medicare LCD structure but not an actual CMS LCD. Drug prices are anchored to public CMS ASP. Production deployment swaps the mock corpus for real payer policies under DUA.
 
 ```
 Claim CLM-000076 billed HCPCS J9228 with NDC 57894-071-01, which is not in
 the CMS NDC-HCPCS crosswalk for J9228. Per Medicare LCD L00000 — Oncology
-Intravenous Biologic Agents §NDC-HCPCS Mapping Requirements: "Every claim
-for a drug billed under an HCPCS J-code MUST include a corresponding National
-Drug Code (NDC) from the CMS NDC-HCPCS crosswalk for that J-code and
-effective date. …" Expected outcome: commercial_regional will deny with
-CO-16. Action: resubmit corrected claim with a crosswalk-valid NDC or
-escalate to coding.
+Intravenous Biologic Agents §NDC-HCPCS Mapping Requirements (mock policy
+corpus, patterned on real LCD structure): "Every claim for a drug billed
+under an HCPCS J-code MUST include a corresponding National Drug Code (NDC)
+from the CMS NDC-HCPCS crosswalk for that J-code and effective date. …"
+Expected outcome: commercial_regional will deny with CO-16. Action:
+resubmit corrected claim with a crosswalk-valid NDC or escalate to coding.
 ```
 
 Calibrated risk score: 1.00 · Dollars at risk: $41,429 · Citation similarity: 0.756
@@ -125,20 +114,27 @@ without a model-generated explanation.
 
 ## Docs
 
-| Surface                               | Artifact                                                               | Status                 |
-| ------------------------------------- | ---------------------------------------------------------------------- | ---------------------- |
-| Product thesis                        | [docs/charter.md](docs/charter.md)                                     | v0.1                   |
-| System design                         | [docs/architecture.md](docs/architecture.md)                           | v0.1                   |
-| Business case                         | [docs/roi-model.md](docs/roi-model.md)                                 | v0 with 2D sensitivity |
-| Product requirements                  | [docs/prd.md](docs/prd.md)                                             | v1                     |
-| **Practice performance memo**         | [docs/practice-performance-memo.md](docs/practice-performance-memo.md) | **Week 4 shipped**     |
-| **Governance reference architecture** | [docs/governance.md](docs/governance.md)                               | **Week 4 shipped**     |
-| Decision log                          | [docs/decision-log.md](docs/decision-log.md)                           | Running                |
-| Roadmap V1/V2/V3                      | [docs/roadmap.md](docs/roadmap.md)                                     | v1                     |
-| Refinement plan (V1→V4)               | [docs/refinement-plan.md](docs/refinement-plan.md)                     | living — Tracks A–F    |
-| Dashboards (SQL)                      | [dashboards/](dashboards/)                                             | 8 queries              |
-| Demo script                           | [docs/demo-script.md](docs/demo-script.md)                             | 2-min + 5-min cuts     |
-| Model card                            | [docs/model-card.md](docs/model-card.md)                               | v1                     |
+| Surface                                 | Artifact                                                                               | Status                       |
+| --------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------- |
+| Product thesis                          | [docs/charter.md](docs/charter.md)                                                     | v0.1                         |
+| System design                           | [docs/architecture.md](docs/architecture.md)                                           | v1                           |
+| Business case (with bear case)          | [docs/roi-model.md](docs/roi-model.md)                                                 | v1                           |
+| Product requirements                    | [docs/prd.md](docs/prd.md)                                                             | v1                           |
+| **Current results — canonical numbers** | [docs/current-results.md](docs/current-results.md)                                     | **single source of truth**   |
+| **Practice performance memo**           | [docs/practice-performance-memo.md](docs/practice-performance-memo.md)                 | v1                           |
+| **Governance reference architecture**   | [docs/governance.md](docs/governance.md)                                               | v1                           |
+| **Discovery + usability plan**          | [docs/discovery-plan.md](docs/discovery-plan.md)                                       | **v1**                       |
+| **Value-realization runbook**           | [docs/value-realization-runbook.md](docs/value-realization-runbook.md)                 | **v1**                       |
+| **Acquisition integration scorecard**   | [docs/acquisition-integration-scorecard.md](docs/acquisition-integration-scorecard.md) | **v1**                       |
+| **RACI + operating cadence**            | [docs/raci.md](docs/raci.md)                                                           | **v1**                       |
+| DUA + privacy office checklist          | [docs/dua-irb-checklist.md](docs/dua-irb-checklist.md)                                 | v1                           |
+| Decision log                            | [docs/decision-log.md](docs/decision-log.md)                                           | Running                      |
+| Roadmap V1/V2/V3/V4                     | [docs/roadmap.md](docs/roadmap.md)                                                     | v1                           |
+| Refinement plan                         | [docs/refinement-plan.md](docs/refinement-plan.md)                                     | living — Tracks A–F          |
+| LLM paraphrase A/B writeup              | [docs/llm-paraphrase-eval.md](docs/llm-paraphrase-eval.md)                             | v1                           |
+| Dashboards (SQL + alarms + RLS DDL)     | [dashboards/](dashboards/)                                                             | 8 queries · 6 alarms · 1 RLS |
+| Demo script                             | [docs/demo-script.md](docs/demo-script.md)                                             | 2-min + 5-min cuts           |
+| Model card                              | [docs/model-card.md](docs/model-card.md)                                               | v1                           |
 
 ## Build plan (4 weeks)
 

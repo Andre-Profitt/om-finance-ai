@@ -83,7 +83,7 @@ For `PR-012`: $0 addressable (non-340B practice); material on 25% of the network
 On day one of onboarding a new practice, the operating cadence is:
 
 1. **Monday morning:** open the reviewer queue for the practice; 53 exceptions ranked by calibrated expected recovery, each with a cited policy clause, color-coded by exception type.
-2. **By Friday of week one:** the top 20 have been worked, $X recovered, override rationales logged for every no-action decision.
+2. **By Friday of week one:** the top 20 have been worked; preliminary recovery dollars + per-decision override rationales are logged. (Specific $ figures land once the practice's actual baseline + reviewer throughput are measured in pilot — V1 estimates from `oaifinance.practice.performance` are scenario projections, not forecasts.)
 3. **Week four:** review the calibration-health dashboard; if slope has drifted, schedule refresh. Access-delay dashboard shows PA resolution time against the 14-day SLA.
 4. **Week ten:** run the specialty-drug economics module against the quarter's GPO and chargeback submissions; 340B scenario verified.
 5. **Week fourteen:** generate the practice performance memo (this document, updated with actuals); surface variance-from-plan to network finance.
@@ -136,7 +136,7 @@ The Control Tower ships the top-three today. Items four through eight are on the
 
 ## 8. What's next after this memo
 
-1. Wire the Control Tower into one pilot practice under DUA + IRB (V2, 6–8 weeks)
+1. Wire the Control Tower into one pilot practice under DUA + privacy/security/legal/controllership approval (V2, 6–8 weeks; IRB review only if research/publication scope is added — this is finance-ops AI, default path is QI, not human-subjects research)
 2. Productionize calibration with a 20% held-out refresh weekly
 3. Publish the model card + governance ref architecture to the controllership team
 4. Expand the payer-policy corpus to the practice's actual top-five payers by volume

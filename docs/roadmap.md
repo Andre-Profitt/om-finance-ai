@@ -35,7 +35,7 @@ Maps the current repo state (V1) against the v2/v3 rollout for O&M Finance deplo
 
 ## V2 — deployable pilot (estimate: 6–8 weeks)
 
-**Goal:** production pilot in one US Oncology practice on real retrospective data under IRB/DUA, with a reviewer UI in the existing RCM workstation.
+**Goal:** production pilot in one US Oncology practice on real retrospective data under DUA + privacy/security/legal/controllership approval (IRB review only if the pilot becomes human-subjects research or produces publishable research), with a reviewer UI in the existing RCM workstation.
 
 | Capability                                                                                                     | Why it's V2                                                                                                                |
 | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -68,15 +68,14 @@ Maps the current repo state (V1) against the v2/v3 rollout for O&M Finance deplo
 
 ## V4 and beyond — research agenda
 
-Not commitments. Items the TPM should surface to the advanced analytics team as value-sizing candidates.
+Not commitments. Items the TPM should surface to the advanced analytics team as value-sizing candidates. Note that JW drug-waste, prior-auth propensity, and site-of-care optimization shipped in V1.1 (formerly listed here as research items).
 
 - Cross-practice leakage correlation — do regional payer behavior changes predict denial waves?
+- **Clinical-trial finance + access intelligence** — connecting Ontada / Sarah Cannon Research Institute / McKesson Compile / Genospace signals to Control Tower so trial activation bottlenecks, reimbursement friction on investigational therapies, patient access delay, site operational cost, and RWE/data-product value are first-class surfaces. The connected-specialty-care framing makes this V4 — O&M is bigger than claims, and finance AI for clinical trials is real money.
 - LLM-based clinical-necessity reasoner for appeal packets (human-approved only, with citation contract preserved)
-- Buy-and-bill inventory-waste detection (JW modifier, vial optimization) as new exception type
-- Prior-auth propensity model — predict which claims will need PA before submission
-- Site-of-care optimization — model reimbursement impact of shifting administration between HOPD and freestanding
 - Payer mix optimization — marginal contribution of each payer contract to network P&L
 - Outbound contract negotiation intelligence — recurring pattern detection in denial reasons to inform next-renewal levers
+- Working-capital + DSO impact modeling for high-cost specialty drug inventory across the network
 
 ## What is intentionally NOT on the roadmap
 
@@ -88,9 +87,9 @@ Not commitments. Items the TPM should surface to the advanced analytics team as 
 
 ## Dependencies and risks
 
-| Dependency                                               | Owner              | Mitigation if slipped                                                |
-| -------------------------------------------------------- | ------------------ | -------------------------------------------------------------------- |
-| DUA / IRB for retrospective labels                       | Research + legal   | Hold pilot at one practice; extend synthetic fold until DUA clears   |
-| Databricks Mosaic AI availability in target workspace    | Platform           | Fall back to Azure OpenAI deployment for LLM layer                   |
-| Controllership sign-off on governance design doc         | Finance leadership | Publish V1 governance.md (Week 4 artifact); schedule working session |
-| Reviewer workflow access (workstation integration point) | RCM operations     | Standalone Databricks App as fallback UI                             |
+| Dependency                                               | Owner                            | Mitigation if slipped                                                                                                     |
+| -------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| DUA + privacy/legal approval for retrospective labels    | Privacy + legal + controllership | Hold pilot at one practice; extend synthetic fold until approvals clear. IRB only if research/publication scope is added. |
+| Databricks Mosaic AI availability in target workspace    | Platform                         | Fall back to Azure OpenAI deployment for LLM layer                                                                        |
+| Controllership sign-off on governance design doc         | Finance leadership               | Publish V1 governance.md (Week 4 artifact); schedule working session                                                      |
+| Reviewer workflow access (workstation integration point) | RCM operations                   | Standalone Databricks App as fallback UI                                                                                  |

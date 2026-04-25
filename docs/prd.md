@@ -93,24 +93,47 @@ AUC is logged in MLflow for model debugging but is not a public headline metric.
 - Production HIPAA compliance claim (design documented in governance.md; claim is not asserted)
 - Fine-tuned LLMs (deferred — template-based explanation with strict citation enforcement beats unconstrained LLM generation on auditor-defensibility at this stage)
 
-## 6. v2 backlog (Week 3)
+## 6. V1.1 polish — additionally shipped post-Week-4
 
-In priority order:
+These items were originally listed as V2 backlog and shipped in the polish + refinement-plan pass (commits `e4f3287`, `0afe50f`, `0953622`, `305ea3a`, `57153ae`, `501a57f`, `4a8e44a`, `af2aa78`, `713ed43`):
 
-1. **Contract economics module** — GPO rebate-tier validation, chargeback-validity checking, ASP variance detection, 340B eligibility scenario module
-2. **LLM paraphrasing layer** (Azure OpenAI or local Ollama) over the retrieved chunks, with strict citation enforcement preserved from v1 (paraphrase must cite the retrieved span)
-3. **Production calibration** — held-out calibration fold rather than in-frame fit
-4. **Leakage dashboard** (Databricks SQL) with per-practice rollup
-5. **Decision log entries** for each v2 non-trivial call
+- **Contract economics module** — 340B + biosimilar conversion + chargeback validity exception types
+- **LLM paraphrasing layer** — Ollama wrapper with post-generation citation verifier, feature-flagged off by default
+- **Production calibration** — 5-fold CV isotonic with sample-weighted reliability slope (DL-0015)
+- **Per-practice leakage dashboard** — 8 SQL queries + 6 drift alarms under `dashboards/sql/`
+- **Multispecialty drug expansion** (C2)
+- **JW drug-waste exception type** (C3)
+- **Pre-bill PA propensity model** (C4)
+- **Site-of-care underpayment exception type** (C5)
+- **Equal-effort per-specialty fairness slice** (A2)
+- **Live CMS ASP + crosswalk fetch** with sample fallback (A6)
+- **Unity Catalog RLS pattern** + Python equivalent for local (B6)
+- **Retrospective label schemas** for V2 ingest (B3)
+- **CI hardening** — Python 3.11/3.12 matrix + ruff + pip-audit + bandit (B8)
+- **DUA + privacy-office checklist** (B9)
 
-## 7. v3 backlog (Week 4)
+## 7. V2 production-pilot backlog (still backlog — 4–6 weeks)
 
-1. Practice Acquisition & Performance Model (memo)
-2. Governance reference architecture (Databricks on Azure)
-3. Multi-practice rollup, benchmarking
-4. Per-payer policy expansion
+The V2 pilot is the move from synthetic data to real retrospective billing-system labels at one US Oncology practice, gated by the `docs/dua-irb-checklist.md` sign-offs.
 
-## 8. Success metrics (post-deployment)
+1. **DUA + privacy/security/legal/controllership approvals** for the pilot practice (gating)
+2. **Retrospective label ingest** wired to the practice's billing system (V1 schemas in `oaifinance.governance.labels` ready)
+3. **Reviewer UI deployment** as Databricks App via the bundle in `databricks.yml`
+4. **Weekly calibration refresh job** running on real labels (notebook + bundle ready)
+5. **Drift alarm wiring** in Databricks SQL Alerts (queries shipped; alert rules pending workspace)
+6. **LLM paraphrase A/B** against three candidate models (harness shipped at `oaifinance.eval.paraphrase_eval`; run when a workspace + Ollama cluster is available)
+
+## 8. V3 network-rollout backlog (still backlog — 6 months post-pilot)
+
+1. Practice Acquisition & Performance Model as a live app (V1 ships the memo only)
+2. Multi-practice benchmarking + drill-through
+3. Contract economics v2 — automated rebate accrual reconciliation + chargeback feedback loop
+4. Biosimilar conversion program dashboard with target tracking
+5. Payer-policy change detection
+6. Reviewer throughput measurement instrumented end-to-end
+7. 340B compliance workflow as a full governed surface
+
+## 9. Success metrics (post-deployment)
 
 Production-facing KPIs the product owner should report quarterly:
 
@@ -122,7 +145,7 @@ Production-facing KPIs the product owner should report quarterly:
 - Calibration drift (does the model need retraining?)
 - Cost-per-exception vs. benefit realized
 
-## 9. Risks + mitigations
+## 10. Risks + mitigations
 
 | Risk                                              | Mitigation                                                                                                                                            |
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -133,13 +156,13 @@ Production-facing KPIs the product owner should report quarterly:
 | 340B module reads as policy advocacy              | Governance-first framing; scenario module, not headline; no leakage advocacy                                                                          |
 | Reviewer throughput assumption (5 min/item) wrong | Override log captures reviewer-level timing in production; eval harness recomputes $/hour from measured data once collected                           |
 
-## 10. Open questions
+## 11. Open questions
 
 1. Should the reviewer queue UI be a Databricks App, an embedded panel in the existing RCM workstation, or a lightweight standalone? (TPM call in v3 after stakeholder interviews.)
 2. What retention period should the override log target for SOX? Proposed: 7 years append-only, but confirm with controllership + legal.
 3. How should the model card for `rev_integrity.risk_scorer` surface calibration drift to non-ML finance leaders? Proposed: single "calibration health" badge on the dashboard, with link to the run comparison.
 
-## 11. Appendix — JD language crosswalk
+## 12. Appendix — JD language crosswalk
 
 For interview use. Each PRD section maps back to the McKesson JR0143772 language:
 

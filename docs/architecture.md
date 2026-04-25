@@ -64,7 +64,7 @@ flowchart LR
     end
 
     subgraph Consumers
-        C1[SQL dashboards<br/>6 panels]
+        C1[SQL dashboards<br/>8 queries + 6 alarms]
         C2[Reviewer queue UI<br/>Streamlit mock]
         C3[Practice performance memo]
         C4[Eval harness<br/>per-specialty slicing]
@@ -174,7 +174,7 @@ See `docs/governance.md` for the full reference architecture. Summary:
 
 ### Consumers
 
-- **SQL dashboards** — 6 panels (leakage summary, reviewer queue top-100, exception exposure, practice heatmap, calibration health, override distribution) under `dashboards/sql/`
+- **SQL dashboards** — 8 queries (leakage summary, reviewer queue top-100, exception exposure, practice heatmap, calibration health, override distribution, **specialty mix, access/PA performance**) under `dashboards/sql/`, plus 6 drift alarms under `dashboards/sql/alerts/` and the Unity Catalog RLS DDL under `dashboards/sql/governance/`
 - **Reviewer queue UI** — Streamlit mock at `src/oaifinance/ui/app.py` (run with `make reviewer-ui`); production UI is a Databricks App or embedded workstation panel
 - **Practice performance memo** — executive artifact driven by `oaifinance.practice.performance`
 - **Eval harness** — computes three rankings, citation precision, abstention rate, calibration, per-specialty slicing
