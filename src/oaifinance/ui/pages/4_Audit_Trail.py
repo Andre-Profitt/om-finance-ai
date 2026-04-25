@@ -16,6 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 styles.inject()
+styles.maybe_presenter_mode()
 
 frames = ud.load_all()
 override = frames.override
@@ -53,19 +54,42 @@ reviewer_ids = sorted(override["reviewer_id"].unique().to_list())
 decisions = sorted(override["decision"].unique().to_list())
 rationales = sorted(override["rationale_category"].unique().to_list())
 
-f1, f2, f3 = st.columns(3)
+# decided_at is ISO timestamp string; cast to datetime for filtering
+override_dt = override.with_columns(
+    pl.col("decided_at").str.to_datetime(strict=False).alias("_decided_at_ts")
+)
+ts_min = override_dt["_decided_at_ts"].min()
+ts_max = override_dt["_decided_at_ts"].max()
+
+f1, f2, f3, f4 = st.columns([1.2, 1, 1, 1])
 with f1:
-    selected_reviewers = st.multiselect("Reviewer", reviewer_ids, default=reviewer_ids)
+    if ts_min is not None and ts_max is not None:
+        date_range = st.date_input(
+            "Decision date range",
+            value=(ts_min.date(), ts_max.date()),
+            min_value=ts_min.date(),
+            max_value=ts_max.date(),
+        )
+    else:
+        date_range = None
 with f2:
-    selected_decisions = st.multiselect("Decision", decisions, default=decisions)
+    selected_reviewers = st.multiselect("Reviewer", reviewer_ids, default=reviewer_ids)
 with f3:
+    selected_decisions = st.multiselect("Decision", decisions, default=decisions)
+with f4:
     selected_rationales = st.multiselect("Rationale", rationales, default=rationales)
 
-filtered = override.filter(
+filtered = override_dt.filter(
     pl.col("reviewer_id").is_in(selected_reviewers)
     & pl.col("decision").is_in(selected_decisions)
     & pl.col("rationale_category").is_in(selected_rationales)
-).sort("decided_at", descending=True)
+)
+if isinstance(date_range, tuple) and len(date_range) == 2:
+    start, end = date_range
+    filtered = filtered.filter(
+        (pl.col("_decided_at_ts").dt.date() >= start) & (pl.col("_decided_at_ts").dt.date() <= end)
+    )
+filtered = filtered.drop("_decided_at_ts").sort("decided_at", descending=True)
 
 ui.section(f"Log ({len(filtered):,} rows after filters)")
 st.dataframe(

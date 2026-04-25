@@ -16,6 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 styles.inject()
+styles.maybe_presenter_mode()
 
 merged = ud.merged_queue()
 frames = ud.load_all()
@@ -115,11 +116,14 @@ queue_display = queue.with_columns(
     "citation_score",
 )
 
-st.dataframe(
+selection = st.dataframe(
     queue_display,
     hide_index=True,
     use_container_width=True,
     height=420,
+    on_select="rerun",
+    selection_mode="multi-row",
+    key="queue_table",
     column_config={
         "claim_id": st.column_config.TextColumn("Claim", width="small"),
         "practice_id": st.column_config.TextColumn("Practice", width="small"),
@@ -146,11 +150,41 @@ st.dataframe(
     },
 )
 
+selected_rows = []
+try:
+    selected_rows = list(selection.selection.rows) if selection else []
+except Exception:
+    selected_rows = []
+
+if selected_rows:
+    selected_claim_ids = [queue["claim_id"][i] for i in selected_rows]
+    bulk_dollars = sum(float(queue["dollars_at_risk"][i]) for i in selected_rows)
+    ui.section(f"Bulk action — {len(selected_claim_ids)} selected ({ui.fmt_dollars(bulk_dollars)})")
+    st.markdown(
+        '<div class="hint">Bulk dispositions are previewed only; the override log is not written from this view.</div>',
+        unsafe_allow_html=True,
+    )
+    bb = st.columns([1, 1, 1, 1, 3])
+    if bb[0].button("Approve all", use_container_width=True, key="bulk_approve"):
+        st.toast(
+            f"Preview: approve · {len(selected_claim_ids)} items · {ui.fmt_dollars(bulk_dollars)}"
+        )
+    if bb[1].button("Resubmit all", use_container_width=True, key="bulk_resubmit"):
+        st.toast(f"Preview: resubmit corrected · {len(selected_claim_ids)} items")
+    if bb[2].button("Escalate all", use_container_width=True, key="bulk_escalate"):
+        st.toast(f"Preview: escalate · {len(selected_claim_ids)} items")
+    if bb[3].button("Reject all", use_container_width=True, key="bulk_reject"):
+        st.toast(f"Preview: reject · {len(selected_claim_ids)} items")
+    drill_default_index = selected_rows[0]
+else:
+    drill_default_index = 0
+
 ui.section("Drill-in")
+queue_claim_ids = queue["claim_id"].to_list()
 selected = st.selectbox(
     "Select a claim",
-    queue["claim_id"].to_list(),
-    index=0,
+    queue_claim_ids,
+    index=min(drill_default_index, len(queue_claim_ids) - 1),
     label_visibility="collapsed",
 )
 row = merged.filter(pl.col("claim_id") == selected).row(0, named=True)

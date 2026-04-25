@@ -132,6 +132,46 @@ section[data-testid="stSidebar"] .stButton > button {
 }
 .kpi-card.accent { border-left: 3px solid var(--color-primary); }
 
+/* Spark KPI: same outer styling but houses an altair chart underneath */
+.kpi-spark {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 1rem 1.25rem 0.5rem 1.25rem;
+}
+.kpi-spark .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+}
+.kpi-spark .value {
+    font-size: 1.625rem;
+    font-weight: 600;
+    color: var(--color-text);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 0.4rem;
+}
+.kpi-spark .footnote {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+}
+
+/* Presenter mode — hides sidebar, centers main content for Loom screens */
+body.presenter section[data-testid="stSidebar"] { display: none; }
+body.presenter [data-testid="stAppViewContainer"] > .main {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+body.presenter .page-header {
+    border-bottom-width: 2px;
+}
+
 /* Status pills */
 .pill {
     display: inline-block;
@@ -296,5 +336,38 @@ section[data-testid="stSidebar"] .stButton > button {
 """
 
 
+PRESENTER_JS = """
+<script>
+(function() {
+    try {
+        const params = new URLSearchParams(window.parent.location.search);
+        const on = params.get("presenter") === "1";
+        const body = window.parent.document.body;
+        if (on) body.classList.add("presenter");
+        else body.classList.remove("presenter");
+    } catch (e) { /* sandboxed iframe — ignore */ }
+})();
+</script>
+"""
+
+
 def inject() -> None:
     st.markdown(CSS, unsafe_allow_html=True)
+
+
+def maybe_presenter_mode() -> bool:
+    """Toggle presenter mode via ?presenter=1 query param.
+
+    Hides the sidebar and centers the main content for clean Loom captures.
+    """
+    try:
+        on = st.query_params.get("presenter") == "1"
+    except Exception:
+        on = False
+    if on:
+        st.markdown(
+            "<style>section[data-testid='stSidebar']{display:none;} "
+            "[data-testid='stAppViewContainer'] > .main{max-width:1200px;margin:0 auto;}</style>",
+            unsafe_allow_html=True,
+        )
+    return on

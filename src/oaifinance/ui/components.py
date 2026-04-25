@@ -10,7 +10,10 @@ Strict patterns:
 from __future__ import annotations
 
 from html import escape
+from typing import Sequence
 
+import altair as alt  # noqa: F401  — used by _spark_chart
+import polars as pl  # noqa: F401  — used by _spark_chart
 import streamlit as st
 
 
@@ -152,6 +155,71 @@ def app_footer(version: str, run_id: str | None = None, model_run_id: str | None
         f'<div class="app-footer"><div>{left}</div><div>{escape(right)}</div></div>',
         unsafe_allow_html=True,
     )
+
+
+def _spark_chart(series: Sequence[float] | pl.Series, color: str = "#1e3a5f") -> alt.Chart:
+    if isinstance(series, pl.Series):
+        values = series.to_list()
+    else:
+        values = list(series)
+    df = pl.DataFrame({"i": list(range(len(values))), "y": values}).to_pandas()
+    base = (
+        alt.Chart(df)
+        .mark_area(
+            line={"color": color, "strokeWidth": 1.5},
+            color=alt.Gradient(
+                gradient="linear",
+                stops=[
+                    alt.GradientStop(color=color, offset=0.0),
+                    alt.GradientStop(color="#ffffff", offset=1.0),
+                ],
+                x1=1,
+                x2=1,
+                y1=0,
+                y2=1,
+            ),
+            opacity=0.55,
+        )
+        .encode(
+            x=alt.X("i:Q", axis=None),
+            y=alt.Y("y:Q", axis=None, scale=alt.Scale(zero=False, padding=2)),
+            tooltip=alt.Tooltip("y:Q", format=",.0f"),
+        )
+        .properties(height=48)
+        .configure_view(stroke=None)
+        .configure_axis(grid=False)
+    )
+    return base
+
+
+def kpi_with_spark(
+    label: str, value: str, spark: Sequence[float] | pl.Series, footnote: str | None = None
+) -> None:
+    st.markdown(
+        f'<div class="kpi-spark"><div class="label">{escape(label)}</div>'
+        f'<div class="value">{escape(value)}</div></div>',
+        unsafe_allow_html=True,
+    )
+    try:
+        st.altair_chart(_spark_chart(spark), use_container_width=True)
+    except Exception:
+        pass
+    if footnote:
+        st.markdown(
+            f'<div class="footnote" style="font-size:0.75rem;color:var(--color-text-muted);'
+            f'margin:-0.5rem 0 0.75rem 0;">{escape(footnote)}</div>',
+            unsafe_allow_html=True,
+        )
+
+
+def kpi_with_spark_row(
+    cards: list[tuple[str, str, Sequence[float] | pl.Series, str | None]],
+) -> None:
+    """Render a row of spark-backed KPI cards across equal-width columns."""
+    cols = st.columns(len(cards))
+    for col, (label, value, spark, footnote) in zip(cols, cards, strict=True):
+        with col:
+            kpi_with_spark(label, value, spark, footnote)
 
 
 def empty_state(message: str, hint: str | None = None) -> None:

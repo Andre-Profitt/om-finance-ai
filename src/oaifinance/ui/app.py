@@ -25,6 +25,7 @@ def main() -> None:
         initial_sidebar_state="expanded",
     )
     styles.inject()
+    presenter = styles.maybe_presenter_mode()
 
     with st.sidebar:
         st.markdown(
@@ -68,27 +69,32 @@ def main() -> None:
         n_rows=n_exceptions,
     )
 
-    ui.kpi_grid(
+    daily = ud.daily_exposure_series()
+    ui.kpi_with_spark_row(
         [
             (
                 "Exception candidates",
                 f"{n_exceptions:,}",
-                "across 8 priority-ordered types",
+                daily.get("n_leakage", []) or [0],
+                "true-leakage daily count (90 days)",
             ),
             (
-                "Total dollars at risk",
+                "Dollars at risk",
                 ui.fmt_dollars(total_at_risk),
-                "ground truth from the synthetic generator",
+                daily.get("leakage_dollars", []) or [0],
+                "daily recoverable leakage",
             ),
             (
                 "Expected recovery",
                 ui.fmt_dollars(expected_recovery),
-                "calibrated risk × dollars at risk",
+                daily.get("dollars_billed", []) or [0],
+                "daily allowed-amount throughput",
             ),
             (
-                "Network practices",
+                "Practices",
                 str(n_practices) if n_practices else "—",
-                "oncology + multispecialty",
+                daily.get("n_claims", []) or [0],
+                "daily claim volume",
             ),
         ]
     )
@@ -203,6 +209,12 @@ def main() -> None:
         )
 
     ui.app_footer(version=__version__, model_run_id=str(model_run_id) if model_run_id else None)
+    if presenter:
+        st.markdown(
+            '<div class="hint" style="text-align:center;margin-top:0.5rem;color:var(--color-text-faint);">'
+            "presenter mode · sidebar hidden · append <code>?presenter=1</code> to any page URL</div>",
+            unsafe_allow_html=True,
+        )
 
 
 main()

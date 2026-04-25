@@ -16,6 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 styles.inject()
+styles.maybe_presenter_mode()
 
 frames = ud.load_all()
 report = frames.eval_report
@@ -50,6 +51,35 @@ ui.kpi_grid(
         ("Abstention rate", ui.fmt_pct(abst), None),
     ]
 )
+
+ui.section("Calibration plot")
+from pathlib import Path as _Path
+
+_cal_png = _Path(__file__).resolve().parents[3] / "artifacts" / "calibration.png"
+_cap_png = _Path(__file__).resolve().parents[3] / "artifacts" / "capture_curves.png"
+img_cols = st.columns(2)
+with img_cols[0]:
+    if _cal_png.exists():
+        st.image(
+            str(_cal_png),
+            caption="Predicted vs. observed leakage rate by score decile (uncal vs. isotonic)",
+            use_container_width=True,
+        )
+    else:
+        ui.empty_state(
+            "calibration.png not found.", "Run `make demo` to regenerate eval artifacts."
+        )
+with img_cols[1]:
+    if _cap_png.exists():
+        st.image(
+            str(_cap_png),
+            caption="Leakage capture vs. reviewer effort across three rankings",
+            use_container_width=True,
+        )
+    else:
+        ui.empty_state(
+            "capture_curves.png not found.", "Run `make demo` to regenerate eval artifacts."
+        )
 
 ui.section("Calibration band")
 if slope_cal is not None:
