@@ -4,16 +4,17 @@ Databricks SQL queries that power the Revenue Integrity Control Tower dashboard.
 
 ## Queries
 
-| File                                    | Panel                 | What it answers                                                                            |
-| --------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------ |
-| `sql/01_leakage_summary.sql`            | Top-of-dashboard KPIs | Total dollars at risk, expected recovery, 340B + biosimilar exposure                       |
-| `sql/02_reviewer_queue_top100.sql`      | Reviewer queue        | The top-100 work queue with citation path, abstention flag, explanation text               |
-| `sql/03_exposure_by_exception_type.sql` | Exception mix         | Breakdown by exception type, with contract-economics types broken out                      |
-| `sql/04_practice_leakage_heatmap.sql`   | Network CFO view      | Per-practice exposure + contract-economics share; feeds acquisition/performance model      |
-| `sql/05_calibration_health.sql`         | Model ops             | Observed vs. predicted rate by score decile; triggers model-refresh SLA on drift           |
-| `sql/06_override_distribution.sql`      | Reviewer behavior     | Override rate, rationale distribution, abstention-routed vs. explained outcomes            |
-| `sql/07_specialty_mix.sql`              | Multispecialty mix    | Exposure by practice specialty (oncology, retinal, rheum, GI, neuro); contract + PA slices |
-| `sql/08_access_pa_performance.sql`      | Access / PA ops       | Per-payer PA-gap volume, access delay cost, expected recovery on access exceptions         |
+| File                                    | Panel                 | What it answers                                                                                                               |
+| --------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `sql/01_leakage_summary.sql`            | Top-of-dashboard KPIs | Total dollars at risk, expected recovery, 340B + biosimilar exposure                                                          |
+| `sql/02_reviewer_queue_top100.sql`      | Reviewer queue        | The top-100 work queue with citation path, abstention flag, explanation text                                                  |
+| `sql/03_exposure_by_exception_type.sql` | Exception mix         | Breakdown by exception type, with contract-economics types broken out                                                         |
+| `sql/04_practice_leakage_heatmap.sql`   | Network CFO view      | Per-practice exposure + contract-economics share; feeds acquisition/performance model                                         |
+| `sql/05_calibration_health.sql`         | Model ops             | Observed vs. predicted rate by score decile; triggers model-refresh SLA on drift                                              |
+| `sql/06_override_distribution.sql`      | Reviewer behavior     | Override rate, rationale distribution, abstention-routed vs. explained outcomes                                               |
+| `sql/07_specialty_mix.sql`              | Multispecialty mix    | Exposure by practice specialty (oncology, retinal, rheum, GI, neuro); contract + PA slices                                    |
+| `sql/08_access_pa_performance.sql`      | Access / PA ops       | Per-payer PA-gap volume, access delay cost, expected recovery on access exceptions                                            |
+| `sql/09_working_capital_exposure.sql`   | Working-capital + DSO | Inventory days, buy-and-bill cash lag, rebate variance, PA/denial DSO impact (V2 — needs realized_outcomes + GPO portal feed) |
 
 ## Local / demo execution
 
