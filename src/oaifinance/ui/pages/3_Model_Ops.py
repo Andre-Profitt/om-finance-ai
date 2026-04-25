@@ -53,10 +53,10 @@ ui.kpi_grid(
 )
 
 ui.section("Calibration plot")
-from pathlib import Path as _Path
+from oaifinance.config import ARTIFACTS_DIR
 
-_cal_png = _Path(__file__).resolve().parents[3] / "artifacts" / "calibration.png"
-_cap_png = _Path(__file__).resolve().parents[3] / "artifacts" / "capture_curves.png"
+_cal_png = ARTIFACTS_DIR / "calibration.png"
+_cap_png = ARTIFACTS_DIR / "capture_curves.png"
 img_cols = st.columns(2)
 with img_cols[0]:
     if _cal_png.exists():
