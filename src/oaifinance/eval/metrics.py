@@ -57,6 +57,9 @@ class EvalReport:
     dollars_captured_by_specialty: dict[str, float] = field(default_factory=dict)
     exposure_by_specialty: dict[str, float] = field(default_factory=dict)
     candidates_by_specialty: dict[str, int] = field(default_factory=dict)
+    precision_by_specialty_equal_effort: dict[str, float] = field(default_factory=dict)
+    dollars_by_specialty_equal_effort: dict[str, float] = field(default_factory=dict)
+    items_per_specialty_equal_effort: int = 0
 
 
 def _auc(y_true: np.ndarray, y_score: np.ndarray) -> float:
@@ -196,6 +199,30 @@ def evaluate(
             exposure_by_specialty[row["practice_specialty"]] = float(row["d"])
             candidates_by_specialty[row["practice_specialty"]] = int(row["n"])
 
+    # Equal-effort per-specialty slicing — fairness signal independent of
+    # which specialty dominates by drug magnitude. Each specialty gets the
+    # same review budget; precision is then comparable across specialties.
+    precision_by_specialty_equal_effort: dict[str, float] = {}
+    dollars_by_specialty_equal_effort: dict[str, float] = {}
+    items_per_specialty = 0
+    if "practice_specialty" in scored.columns:
+        present_specialties = sorted(scored["practice_specialty"].unique().to_list())
+        if present_specialties:
+            items_per_specialty = max(5, 100 // len(present_specialties))
+            for sp in present_specialties:
+                top_sp = (
+                    scored.filter(pl.col("practice_specialty") == sp)
+                    .sort(rank_col, descending=True)
+                    .head(items_per_specialty)
+                )
+                if len(top_sp) > 0:
+                    precision_by_specialty_equal_effort[sp] = float(
+                        top_sp["_true_leakage"].cast(pl.Int8).sum() / len(top_sp)
+                    )
+                    dollars_by_specialty_equal_effort[sp] = float(
+                        top_sp["_true_leakage_amount"].sum()
+                    )
+
     return EvalReport(
         n_exceptions=len(scored),
         n_all_claims=n_all,
@@ -219,6 +246,9 @@ def evaluate(
         dollars_captured_by_specialty=dollars_by_specialty,
         exposure_by_specialty=exposure_by_specialty,
         candidates_by_specialty=candidates_by_specialty,
+        precision_by_specialty_equal_effort=precision_by_specialty_equal_effort,
+        dollars_by_specialty_equal_effort=dollars_by_specialty_equal_effort,
+        items_per_specialty_equal_effort=items_per_specialty,
     )
 
 

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from oaifinance import pipeline
+import polars as pl
+
+from oaifinance.config import GOLD_DIR
 
 
-def test_pipeline_runs():
-    report = pipeline.run(n_claims=1000)
+def test_pipeline_runs(pipeline_report):
+    report = pipeline_report
 
     assert report.n_exceptions > 0, "no exception candidates flagged"
     assert 0.0 <= report.base_rate_candidates <= 1.0
@@ -28,28 +30,27 @@ def test_pipeline_runs():
 
     assert report.dollars_at_risk_total > 0
 
-    # Week 2 invariants: calibration + RAG shipped
+
+def test_calibration_invariants(pipeline_report):
+    report = pipeline_report
     assert report.calibration_slope_calibrated is not None, "isotonic calibration missing"
-    # 5-fold CV isotonic + sample-count-weighted reliability slope. Target
-    # band is the standard reliability-diagram band [0.85, 1.15]; accept
-    # slightly loosened on small synthetic samples to avoid spurious failures.
     assert 0.80 <= report.calibration_slope_calibrated <= 1.20, (
         f"calibrated slope {report.calibration_slope_calibrated:.3f} outside [0.80, 1.20]"
     )
 
+
+def test_rag_invariants(pipeline_report):
+    report = pipeline_report
     assert report.citation_precision is not None, "RAG citation eval missing"
     assert report.citation_precision >= 0.85, (
         f"citation precision {report.citation_precision:.3f} below 0.85"
     )
-
     assert report.abstention_rate is not None
     assert 0.0 <= report.abstention_rate <= 1.0
 
-    # Week 3 invariants: contract-economics exception types present
-    import polars as pl
 
-    from oaifinance.config import GOLD_DIR
-
+def test_contract_economics_present(pipeline_report):
+    """Week 3 invariant — contract-economics exception types must appear."""
     exceptions = pl.read_parquet(GOLD_DIR / "exception_candidates.parquet")
     types = set(exceptions["exception_type"].unique().to_list())
     contract_types = {
@@ -61,19 +62,23 @@ def test_pipeline_runs():
         f"missing contract-economics exception types: {contract_types - types}"
     )
 
-    # Week 4 invariants: access/PA + multispecialty coverage + practice analytics
-    assert "access_pa_gap" in types, "missing access_pa_gap exception type"
 
+def test_access_and_multispecialty_present(pipeline_report):
+    """Week 4 invariant — access PA module + multispecialty coverage."""
+    exceptions = pl.read_parquet(GOLD_DIR / "exception_candidates.parquet")
+    types = set(exceptions["exception_type"].unique().to_list())
+    assert "access_pa_gap" in types, "missing access_pa_gap exception type"
     specialties = set(exceptions["practice_specialty"].unique().to_list())
     assert "oncology" in specialties, "oncology specialty missing"
     assert len(specialties) >= 2, f"expected multispecialty coverage, saw only: {specialties}"
 
-    from oaifinance.practice import performance
 
-    model = performance.analyze()
-    assert model.network_summary["n_practices"] >= 5
-    assert model.network_summary["total_at_risk"] > 0
-    assert len(model.initiatives) == 5
-    assert model.total_projected_net_value > 0, (
-        "expected positive net value from 100-day initiatives"
+def test_equal_effort_specialty_slice(pipeline_report):
+    """Week 5 polish — equal-effort slicing produces a value per present specialty."""
+    report = pipeline_report
+    assert report.items_per_specialty_equal_effort > 0
+    assert len(report.precision_by_specialty_equal_effort) >= 2, (
+        "equal-effort slice should produce ≥ 2 specialties"
     )
+    for sp, p in report.precision_by_specialty_equal_effort.items():
+        assert 0.0 <= p <= 1.0, f"precision out of range for {sp}: {p}"

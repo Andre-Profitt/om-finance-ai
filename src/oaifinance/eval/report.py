@@ -184,6 +184,24 @@ def _markdown(report: EvalReport) -> str:
             lines.append(f"| {sp} | {n:,} | ${dollars:,.0f} |")
         lines.append("")
 
+    if report.precision_by_specialty_equal_effort:
+        n_each = report.items_per_specialty_equal_effort
+        lines += [
+            f"## Equal-effort per-specialty slice (top-{n_each} per specialty)",
+            "",
+            "Fairness check: each specialty gets the same reviewer budget. "
+            "Precision should land in a tight band across specialties — wide "
+            "variance indicates the model is unfair to a sub-population.",
+            "",
+            "| Specialty | Precision @ top-N | Dollars captured |",
+            "|---|---|---|",
+        ]
+        for sp in sorted(report.precision_by_specialty_equal_effort.keys()):
+            p = report.precision_by_specialty_equal_effort[sp]
+            d = report.dollars_by_specialty_equal_effort.get(sp, 0.0)
+            lines.append(f"| {sp} | {p:.1%} | ${d:,.0f} |")
+        lines.append("")
+
     if report.precision_by_specialty:
         lines += [
             "## Top-100 queue — specialty concentration",
