@@ -75,19 +75,24 @@ def kpi_grid(cards: list[tuple[str, str, str | None]], accent_first: bool = True
     """Render a horizontal grid of KPI cards.
 
     Each card is (label, value, footnote_or_none).
+
+    HTML is emitted with NO leading whitespace per line — Streamlit's markdown
+    parser treats 4+ spaces as a code block, which would dump raw HTML into
+    the page instead of rendering it.
     """
-    inner = ""
+    parts = ['<div class="kpi-grid">']
     for i, (label, value, footnote) in enumerate(cards):
         accent_class = " accent" if accent_first and i == 0 else ""
         foot_html = f'<div class="footnote">{escape(footnote)}</div>' if footnote else ""
-        inner += f"""
-        <div class="kpi-card{accent_class}">
-            <div class="label">{escape(label)}</div>
-            <div class="value">{escape(value)}</div>
-            {foot_html}
-        </div>
-        """
-    st.markdown(f'<div class="kpi-grid">{inner}</div>', unsafe_allow_html=True)
+        parts.append(
+            f'<div class="kpi-card{accent_class}">'
+            f'<div class="label">{escape(label)}</div>'
+            f'<div class="value">{escape(value)}</div>'
+            f"{foot_html}"
+            f"</div>"
+        )
+    parts.append("</div>")
+    st.markdown("".join(parts), unsafe_allow_html=True)
 
 
 def status_pill(label: str, kind: str = "info") -> str:
