@@ -30,10 +30,11 @@ def test_pipeline_runs():
 
     # Week 2 invariants: calibration + RAG shipped
     assert report.calibration_slope_calibrated is not None, "isotonic calibration missing"
-    # Held-out calibration fold (production-realistic) can run slightly high
-    # on small synthetic samples; accept a looser band than in-frame fit.
-    assert 0.7 <= report.calibration_slope_calibrated <= 2.0, (
-        f"calibrated slope {report.calibration_slope_calibrated:.3f} outside (0.7, 2.0)"
+    # 5-fold CV isotonic + sample-count-weighted reliability slope. Target
+    # band is the standard reliability-diagram band [0.85, 1.15]; accept
+    # slightly loosened on small synthetic samples to avoid spurious failures.
+    assert 0.80 <= report.calibration_slope_calibrated <= 1.20, (
+        f"calibrated slope {report.calibration_slope_calibrated:.3f} outside [0.80, 1.20]"
     )
 
     assert report.citation_precision is not None, "RAG citation eval missing"

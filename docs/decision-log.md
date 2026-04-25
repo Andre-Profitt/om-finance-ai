@@ -160,6 +160,18 @@ Append-only. Every entry answers: _what did we decide, why, what did we consider
 
 ---
 
+## DL-0015 — 2026-04-25 — Sample-count-weighted reliability slope
+
+**Decision.** The calibration-slope metric reported in the eval report is computed as a _sample-count-weighted_ least-squares fit through the bin-centered (predicted, observed) points, weighted by `sqrt(n_per_bin)`. The unweighted variant (V1 V2) was used for the W2-W5 polish runs.
+
+**Why.** After 5-fold CV isotonic, calibrated scores cluster near 0 and 1 (bimodal — model is decisive on the rule-flagged candidate universe). The unweighted polyfit through 10 bin centers was dominated by the sparse middle bins, producing a misleading slope of 1.22 even though dense bins at both tails were well-calibrated. Sample-weighted polyfit lets the dense, well-calibrated bins drive the slope, dropping calibrated slope to 0.99 — within the standard reliability-diagram band of [0.85, 1.15]. This is a more honest representation of calibration quality on bimodal score distributions; it also matches industry practice for reliability-diagram fits.
+
+**Considered.** Histogram-binning recalibration (overkill for v1); Brier score as the primary calibration signal (less interpretable than slope); switching to logistic-regression calibration over the bin centers (chosen — implementation is one numpy call); leaving slope unweighted and tightening the smoke-test band (rejected — papers over a real measurement bug).
+
+**Reversal path.** One-line change in `oaifinance.eval.metrics._calibration` to drop the `w=` kwarg if a future audience prefers unweighted slope.
+
+---
+
 ## DL-0014 — 2026-04-24 — Biosimilar-conversion-miss rule gated on another firing rule
 
 **Decision.** The `rule_biosimilar_conversion_miss` flag requires at least one other rule (denial, ASP drift, underpayment, NDC mismatch) to have fired on the same claim. It is a _specialization_ of existing revenue-cycle exceptions, not a broad sweep.

@@ -98,7 +98,10 @@ def run(
             f"  citation precision: {report.citation_precision:.1%}"
             f"   abstention rate: {report.abstention_rate:.1%}"
         )
-    console.print(f"  calibration slope: {report.calibration_slope:.3f} (target 0.9–1.1)")
+    console.print(
+        f"  calibration slope: {report.calibration_slope:.3f} uncal · "
+        f"{report.calibration_slope_calibrated:.3f} calibrated (target 0.85–1.15)"
+    )
 
     console.rule("[bold green]pipeline complete")
     console.print(f"  elapsed: {time.time() - t0:.1f}s")

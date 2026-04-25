@@ -71,19 +71,30 @@ def _auc(y_true: np.ndarray, y_score: np.ndarray) -> float:
 
 
 def _calibration(y_true: np.ndarray, y_score: np.ndarray, bins: int = 10) -> tuple[float, float]:
+    """Sample-count-weighted reliability slope.
+
+    Bins (predicted_score, observed_rate) by score decile, drops bins with
+    < 5 samples, then fits a weighted least-squares line through the bin
+    centers using sqrt(n_per_bin) as weight. The unweighted version was
+    sensitive to the sparse middle bins that dominate the fit when scores
+    are bimodal — common after isotonic calibration on imbalanced labels.
+    """
     if len(np.unique(y_score)) < 2:
         return float("nan"), float("nan")
     bucket = np.clip((y_score * bins).astype(int), 0, bins - 1)
-    xs, ys = [], []
+    xs, ys, ns = [], [], []
     for b in range(bins):
         mask = bucket == b
-        if mask.sum() < 5:
+        n = int(mask.sum())
+        if n < 5:
             continue
         xs.append(float(y_score[mask].mean()))
         ys.append(float(y_true[mask].mean()))
+        ns.append(n)
     if len(xs) < 2:
         return float("nan"), float("nan")
-    slope, intercept = np.polyfit(np.array(xs), np.array(ys), 1)
+    weights = np.sqrt(np.array(ns, dtype=float))
+    slope, intercept = np.polyfit(np.array(xs), np.array(ys), 1, w=weights)
     return float(slope), float(intercept)
 
 
