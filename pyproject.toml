@@ -1,7 +1,7 @@
 [project]
 name = "oai-finance"
 version = "0.1.0"
-description = "O&M Finance Revenue Integrity Control Tower — governed AI for oncology-practice revenue leakage prioritization"
+description = "O&M Finance AI Control Tower — finance operating layer across revenue integrity, access/PA intelligence, specialty drug economics, practice performance, and controllership-ready governance for oncology + multispecialty care"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Andre Profitt" }]

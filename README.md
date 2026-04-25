@@ -4,7 +4,7 @@
 
 > The finance-side operating layer above O&M's existing practice-facing capabilities (Glide Health claims acceptance, CoverMyMeds access automation, Onmark GPO savings, Regimen Profiler / Practice Insights analytics, iKnowMed EHR, Ontada data). Focused on ROI sizing, exception prioritization, evidence-grounded explanation, controllership audit trail, and adoption metrics — so practices can reduce administrative burden, accelerate access, and keep providers focused on patients.
 
-**Status:** Week 4 complete — working end-to-end pipeline with eight exception types across revenue-cycle + access + contract economics, multispecialty coverage (5 specialties), held-out isotonic calibration, evidence-grounded RAG with honest abstention, simulated override log, per-practice performance + acquisition model, governance reference architecture, and six Databricks SQL dashboard queries.
+**Status:** V1 shipped (Weeks 0–4 + polish). Working end-to-end pipeline: eight exception types across revenue-cycle + access + contract economics; multispecialty coverage across five specialties; cross-validated isotonic calibration; evidence-grounded RAG with honest abstention; flag-gated LLM paraphrase layer with strict citation contract; simulated override log; per-practice performance + acquisition model; governance reference architecture; eight Databricks SQL dashboard queries; Streamlit reviewer-queue mock; CI green on every push; refinement plan covering V1 → V4 in [docs/refinement-plan.md](docs/refinement-plan.md).
 
 **Author:** Andre Profitt · [LinkedIn](https://www.linkedin.com/in/andreprofitt) · built as a public Lead-TPM-Finance-AI portfolio artifact.
 
@@ -101,21 +101,24 @@ Nine stages, Databricks-native (Delta, Unity Catalog-ready schemas, MLflow track
 ## Sample output (auditable)
 
 ```
-Claim CLM-002720 billed HCPCS J9228 with NDC 50242-060-01, which is not in
+Claim CLM-000076 billed HCPCS J9228 with NDC 57894-071-01, which is not in
 the CMS NDC-HCPCS crosswalk for J9228. Per Medicare LCD L00000 — Oncology
 Intravenous Biologic Agents §NDC-HCPCS Mapping Requirements: "Every claim
 for a drug billed under an HCPCS J-code MUST include a corresponding National
 Drug Code (NDC) from the CMS NDC-HCPCS crosswalk for that J-code and
-effective date. …" Action: resubmit corrected claim with a crosswalk-valid
-NDC or escalate to coding.
+effective date. …" Expected outcome: commercial_regional will deny with
+CO-16. Action: resubmit corrected claim with a crosswalk-valid NDC or
+escalate to coding.
 ```
+
+Calibrated risk score: 1.00 · Dollars at risk: $41,429 · Citation similarity: 0.756
 
 And when retrieval is too weak to cite confidently:
 
 ```
 No policy or contract clause in the current corpus exceeded the similarity
 threshold (0.64); best candidate was commercial_regional_prior_auth_oncology
-§Prior Authorization Required at similarity 0.62. Routing to human reviewer
+§Prior Authorization Required at similarity 0.59. Routing to human reviewer
 without a model-generated explanation.
 ```
 
@@ -138,13 +141,14 @@ without a model-generated explanation.
 
 ## Build plan (4 weeks)
 
-| Week | Focus                          | Status                                                                                                             |
-| ---- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| 0    | Scaffold + apply               | **Done**                                                                                                           |
-| 1    | Hero skeleton                  | **Done** — ingest, silver, rules, LightGBM, ROI                                                                    |
-| 2    | Evidence + eval                | **Done** — RAG + abstention + calibration + overrides + PRD                                                        |
-| 3    | Contract economics             | **Done** — 340B/biosimilar/chargeback types, SQL dashboards, roadmap, held-out calibration                         |
-| 4    | Specialty + access + executive | **Done** — multispecialty coverage, access/PA module, practice performance memo, governance reference architecture |
+| Week | Focus                          | Status                                                                                                                                                                                                 |
+| ---- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0    | Scaffold + apply               | **Done**                                                                                                                                                                                               |
+| 1    | Hero skeleton                  | **Done** — ingest, silver, rules, LightGBM, ROI                                                                                                                                                        |
+| 2    | Evidence + eval                | **Done** — RAG + abstention + calibration + overrides + PRD                                                                                                                                            |
+| 3    | Contract economics             | **Done** — 340B/biosimilar/chargeback types, SQL dashboards, roadmap, held-out calibration                                                                                                             |
+| 4    | Specialty + access + executive | **Done** — multispecialty coverage, access/PA module, practice performance memo, governance reference architecture                                                                                     |
+| 5    | Polish + refinement plan       | **Done** — charter v1, decision log catch-up, model card, LLM paraphrase layer (flag-gated), CI, per-specialty eval slicing, CV calibration, Streamlit reviewer UI, demo script, V1→V4 refinement plan |
 
 ## Stack
 
