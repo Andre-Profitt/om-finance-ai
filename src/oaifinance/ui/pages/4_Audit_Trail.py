@@ -54,9 +54,12 @@ reviewer_ids = sorted(override["reviewer_id"].unique().to_list())
 decisions = sorted(override["decision"].unique().to_list())
 rationales = sorted(override["rationale_category"].unique().to_list())
 
-# decided_at is ISO timestamp string; cast to datetime for filtering
+# decided_at is ISO-8601 with timezone offset; parse with explicit format
+# so polars doesn't complain about ambiguous tz-handling on auto-inference.
 override_dt = override.with_columns(
-    pl.col("decided_at").str.to_datetime(strict=False).alias("_decided_at_ts")
+    pl.col("decided_at")
+    .str.to_datetime(format="%Y-%m-%dT%H:%M:%S%.f%:z", strict=False)
+    .alias("_decided_at_ts")
 )
 ts_min = override_dt["_decided_at_ts"].min()
 ts_max = override_dt["_decided_at_ts"].max()
