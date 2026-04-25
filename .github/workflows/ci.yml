@@ -9,6 +9,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
 
@@ -18,12 +22,16 @@ jobs:
           version: "0.11.7"
 
       - name: Set up Python
-        run: uv python install 3.12
+        run: uv python install ${{ matrix.python }}
 
       - name: Install dependencies
         run: uv sync --all-extras
 
-      - name: Run smoke test
+      - name: Lint (ruff)
+        run: uv run ruff check src tests
+        continue-on-error: true
+
+      - name: Run smoke + unit tests
         run: uv run pytest tests/ -q
         env:
           OAI_ENABLE_LLM_PARAPHRASE: "0"
@@ -36,10 +44,30 @@ jobs:
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && matrix.python == '3.12'
         with:
           name: pipeline-artifacts
           path: |
             artifacts/
             data/gold/
           retention-days: 7
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.11.7"
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install dependencies
+        run: uv sync --all-extras
+      - name: pip-audit (deps)
+        run: uv run pip-audit --strict || true
+        continue-on-error: true
+      - name: bandit (code)
+        run: |
+          uv pip install bandit
+          uv run bandit -q -r src/ -ll
+        continue-on-error: true
