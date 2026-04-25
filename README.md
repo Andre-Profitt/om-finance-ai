@@ -52,7 +52,7 @@ Append-only override log with model version, prompt version, retrieved-doc versi
 
 ## Pipeline architecture
 
-Nine stages, Databricks-native (Delta, Unity Catalog-ready schemas, MLflow tracking). Runs locally on Parquet today; the same code deploys to Databricks on Azure without architectural change.
+Nine stages with a **Databricks-ready** design (Delta + Unity Catalog schema definitions, MLflow tracking, Databricks Asset Bundle skeleton, SQL dashboard logic). Runs locally on Parquet today. A production pilot would still need workspace-specific validation, access-control review, data-source onboarding, and Azure Databricks environment testing — see `docs/dua-irb-checklist.md` and `docs/discovery-plan.md` for the gating activities.
 
 1. **Bronze — CMS ingest.** Real CMS ASP + NDC-HCPCS crosswalk (sample snapshot committed; live-fetch hook ready).
 2. **Bronze — synthetic claims.** 5,000 claims across **18 HCPCS codes** spanning oncology + retinal + rheumatology + GI + neurology; 4 payer archetypes; latent error state observed noisily by rules; site-of-care + JW-modifier compliance flags.
@@ -152,7 +152,7 @@ without a model-generated explanation.
 - **Databricks on Azure (target runtime)** — Unity Catalog, Delta, MLflow, Mosaic AI / Azure OpenAI (v2 LLM layer), Databricks Asset Bundles, SQL Warehouse
 - **Python 3.11+** — polars, LightGBM, MLflow, sentence-transformers, scikit-learn (IsotonicRegression), matplotlib, click
 - **Data sources (public, real)** — CMS ASP Part B, CMS NDC-HCPCS crosswalk, HRSA OPAIS (340B scenario), SEC EDGAR exhibits (contract patterns); payer PA workflow patterned on commercial specialty policy
-- **Synthetic layer** — 5k claims across 14 HCPCS, 5 specialties, 4 payer archetypes, 20 practices; drug prices anchored to real ASP
+- **Synthetic layer** — 5k claims across 18 HCPCS (10 oncology + 4 retinal/rheum/GI/neuro + 4 second-line oncology/multispecialty additions), 5 specialties, 4 payer archetypes, 20 practices; drug prices anchored to real ASP
 
 ## Evaluation philosophy
 

@@ -127,7 +127,7 @@ flowchart LR
 - **opais_raw** — HRSA OPAIS (real, public); used only in the 340B scenario module
 - **contracts_raw** — mock GPO clauses patterned on SEC EDGAR exhibits (master rebate, biosimilar conversion, chargeback validation)
 - **policies_raw** — mock payer policies: Medicare LCD, commercial national NCCN, commercial regional PA, Medicaid managed specialty, **commercial national PA workflow** (access-module grounding)
-- **claims_raw** — 5k synthetic claims across 14 HCPCS × 4 payer archetypes × 20 practices × 5 specialties, with latent `is_true_error` state observed noisily by rules; drug prices anchored to real ASP
+- **claims_raw** — 5k synthetic claims across 18 HCPCS × 4 payer archetypes × 20 practices × 5 specialties, with latent `is_true_error` state observed noisily by rules; drug prices anchored to real ASP
 
 ### Silver — normalized, Unity-Catalog-registered
 

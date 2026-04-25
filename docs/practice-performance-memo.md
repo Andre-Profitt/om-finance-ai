@@ -74,7 +74,9 @@ For `PR-012`: $0 addressable (this practice's drug mix has no reference-biologic
 Target: compliance-first workflow ensuring 340B-purchased claims are excluded from GPO rebate accrual.
 For `PR-012`: $0 addressable (non-340B practice); material on 25% of the network that is 340B.
 
-**Total Q1 net value on `PR-012`: $321.9K against $292 reviewer cost.** At 20 practices the modeled network-level Q1 opportunity exceeds $5.8M based on calibrated expected recovery.
+**Total Q1 modeled recovery on `PR-012`: $322.2K. Reviewer labor-only estimate: $292** (5–7 min/item × loaded reviewer hourly).
+
+**This $292 number is reviewer labor only, not the fully-loaded pilot cost.** Fully-loaded pilot economics for V2 must include implementation cost (engineering integration, EHR/PM connector, training), SME / coder time on remediation, controllership review of AI-assisted entries, privacy/security review, change management, and tool / platform cost. With those rolled in, the **pilot net value is negative in Y1** per the bear case in [`docs/roi-model.md`](roi-model.md) and break-even shifts to Y3 if prevention lift improves over time. The 20-practice network-scale projection in this section is **upside scenario sizing, not a forecast**, and the bear-case at network scale is materially smaller (see roi-model.md "Using this for a practice-network ROI roll-up").
 
 ---
 

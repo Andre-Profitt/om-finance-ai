@@ -92,7 +92,7 @@ Append-only. Every entry answers: _what did we decide, why, what did we consider
 
 **Decision.** Synthetic claims carry a latent `is_true_error` flag that rules observe _noisily_. Rule indicators never deterministically predict the `_true_leakage` label. Leakage additions for biosimilar-conversion-miss and gpo_340b_double_dip are gated by realization rates (48% and 55% respectively).
 
-**Why.** V1 pipeline's first run produced AUC 1.000 / precision 100% because rules perfectly predicted the label. That's not a model — it's a lookup. The redesign (DL-0008) introduces probabilistic observation of a latent state so AUC is earned. Current AUC 0.925 is non-trivially achieved.
+**Why.** V1 pipeline's first run produced AUC 1.000 / precision 100% because rules perfectly predicted the label. That's not a model — it's a lookup. The redesign (DL-0008) introduces probabilistic observation of a latent state so AUC is earned (live AUC in `docs/current-results.md`).
 
 **Considered.** Deterministic rules → leakage (rejected — trivial); heavily-noised rules (chosen); fully random labels (rejected — ML can't learn).
 

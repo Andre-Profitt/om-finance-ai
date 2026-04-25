@@ -61,14 +61,14 @@ V2 retrospective billing labels for finance-AI scoring is generally a **quality 
 
 ## 5. Compliance / SOX
 
-| Item                                      | Status | Owner          | Notes                                                                         |
-| ----------------------------------------- | ------ | -------------- | ----------------------------------------------------------------------------- |
-| Model risk management framework alignment | ☐      | Internal Audit | Map to existing finance MRM                                                   |
-| SOX scoping decision                      | ☐      | Controllership | Are AI-assisted finance entries SOX-relevant? Default: yes for any entry > $X |
-| Change-control process documented         | ☐      | TPM            | docs/governance.md §5                                                         |
-| Two-person integrity attested             | ☐      | TPM            | Promotion approver ≠ PR author; logged                                        |
-| Override log retention 7 years            | ☐      | Controllership | docs/governance.md §7                                                         |
-| Drift / alarm runbook                     | ☐      | TPM            | dashboards/sql/alerts/                                                        |
+| Item                                      | Status | Owner          | Notes                                                                                                                                                                                          |
+| ----------------------------------------- | ------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Model risk management framework alignment | ☐      | Internal Audit | Map to existing finance MRM                                                                                                                                                                    |
+| SOX scoping decision                      | ☐      | Controllership | Are AI-assisted finance entries SOX-relevant? Materiality threshold TBD by Controller. Pilot default: controller review for any single exception ≥ $10K or aggregate monthly exposure ≥ $100K. |
+| Change-control process documented         | ☐      | TPM            | docs/governance.md §5                                                                                                                                                                          |
+| Two-person integrity attested             | ☐      | TPM            | Promotion approver ≠ PR author; logged                                                                                                                                                         |
+| Override log retention 7 years            | ☐      | Controllership | docs/governance.md §7                                                                                                                                                                          |
+| Drift / alarm runbook                     | ☐      | TPM            | dashboards/sql/alerts/                                                                                                                                                                         |
 
 ## 6. Operational
 
@@ -84,10 +84,10 @@ V2 retrospective billing labels for finance-AI scoring is generally a **quality 
 
 This checklist is reviewed and signed by:
 
-- TPM (product) — ************\_************ Date: ****\_\_****
-- Privacy Office — ************\_************ Date: ****\_\_****
-- Legal — ************\_************ Date: ****\_\_****
-- Internal Audit — ************\_************ Date: ****\_\_****
-- Practice CFO — ************\_************ Date: ****\_\_****
+- TPM (product) — ****\*\*\*\*****\_****\*\*\*\***** Date: \***\*\_\_\*\***
+- Privacy Office — ****\*\*\*\*****\_****\*\*\*\***** Date: \***\*\_\_\*\***
+- Legal — ****\*\*\*\*****\_****\*\*\*\***** Date: \***\*\_\_\*\***
+- Internal Audit — ****\*\*\*\*****\_****\*\*\*\***** Date: \***\*\_\_\*\***
+- Practice CFO — ****\*\*\*\*****\_****\*\*\*\***** Date: \***\*\_\_\*\***
 
 V2 ingest begins **only after** all signatures are in place.
