@@ -7,7 +7,7 @@
 
 ## One-paragraph summary
 
-A governed medallion pipeline on Databricks + Azure spanning oncology + multispecialty care (retinal, rheumatology, gastroenterology, neurology). Public CMS ASP + NDC-HCPCS + HRSA OPAIS files plus mock GPO contract exhibits, a commercial prior-auth workflow corpus, and synthetic claims land in Bronze Delta; normalization and entity resolution produce Silver tables registered in Unity Catalog (claim lines carry specialty, 340B, and PA flags); Gold tables power the scored exception queue across eight exception types, ROI aggregates, per-practice performance views, and an append-only override log. A LightGBM model (MLflow-tracked, registered, with gain-based feature importance) scores exception risk; isotonic regression on a held-out fold produces a calibrated score. The reviewer queue ranks on `expected_recovery = risk_score_calibrated × dollars_at_risk`. A RAG layer over policy and contract documents produces evidence-grounded explanations with citation enforcement and abstention; an optional LLM paraphrase stage (feature-flagged) re-renders the top-k items via Ollama under a strict post-generation citation verifier. Every score, explanation, and reviewer decision is logged to a controllership audit table with model version, prompt version, source-document version, and override rationale.
+A governed medallion pipeline on Databricks + Azure spanning oncology + multispecialty care (retinal, rheumatology, gastroenterology, neurology). Public CMS ASP + NDC-HCPCS + HRSA OPAIS files plus mock GPO contract exhibits, a commercial prior-auth workflow corpus, and synthetic claims land in Bronze Delta; normalization and entity resolution produce Silver tables registered in Unity Catalog (claim lines carry specialty, 340B, and PA flags); Gold tables power the scored exception queue across ten exception types, ROI aggregates, per-practice performance views, and an append-only override log. A LightGBM model (MLflow-tracked, registered, with gain-based feature importance) scores exception risk; isotonic regression on a held-out fold produces a calibrated score. The reviewer queue ranks on `expected_recovery = risk_score_calibrated × dollars_at_risk`. A RAG layer over policy and contract documents produces evidence-grounded explanations with citation enforcement and abstention; an optional LLM paraphrase stage (feature-flagged) re-renders the top-k items via Ollama under a strict post-generation citation verifier. Every score, explanation, and reviewer decision is logged to a controllership audit table with model version, prompt version, source-document version, and override rationale.
 
 ## System diagram
 
@@ -139,15 +139,17 @@ Row-level-security pattern documented in `docs/governance.md` §4 (PHI overlay).
 
 ### Gold — modeled + governed
 
-- **exception_candidates** — eight exception types in priority order:
+- **exception_candidates** — ten exception types in priority order:
   1. `access_pa_gap`
-  2. `gpo_340b_rebate_excluded`
-  3. `chargeback_validity_fail`
-  4. `biosimilar_conversion_miss`
-  5. `ndc_hcpcs_mismatch`
-  6. `asp_drift`
-  7. `underpayment`
-  8. `denial`
+  2. `jw_drug_waste`
+  3. `gpo_340b_rebate_excluded`
+  4. `chargeback_validity_fail`
+  5. `biosimilar_conversion_miss`
+  6. `site_of_care_underpayment`
+  7. `ndc_hcpcs_mismatch`
+  8. `asp_drift`
+  9. `underpayment`
+  10. `denial`
 - **scored_exceptions** — candidate + `risk_score` + `risk_score_calibrated` + `expected_recovery` + `expected_recovery_calibrated` + `model_run_id` + `model_name`
 - **explained_exceptions** — scored rows + `citation_doc_id` + `citation_section` + `citation_score` + `retrieved_top_k` + `explanation_text` + `explained`/`abstained` + (optional) `paraphrase_text`, `paraphrase_status`
 - **practice_performance** — per-practice exposure, exception mix, payer mix, access delay cost (feeds the executive memo)
