@@ -28,17 +28,17 @@ Stop and re-baseline after every ship. The portfolio must stay demoable at all t
 
 Tighten the current portfolio. Highest signal-per-hour. All in-session except Loom.
 
-| ID     | Item                                             | Type   | Effort   | Status                                           |
-| ------ | ------------------------------------------------ | ------ | -------- | ------------------------------------------------ |
-| **A1** | Calibration slope into [0.85, 1.15]              | code   | 1 sess   | **done** (`e4f3287`/`df05368`) — 0.99 calibrated |
-| **A2** | Per-specialty top-N-per-specialty fairness slice | code   | 0.5 sess | todo                                             |
-| **A3** | Unit tests for paraphraser citation contract     | code   | 0.5 sess | todo                                             |
-| **A4** | Unit tests for practice performance module       | code   | 0.5 sess | todo                                             |
-| **A5** | Streamlit UI: cache + governance page            | code   | 1 sess   | todo                                             |
-| **A6** | Live CMS ASP fetch (quarterly scraper)           | code   | 1 sess   | todo                                             |
-| **A7** | Loom recording                                   | manual | 1 hr     | todo                                             |
-| **A8** | Resume + LinkedIn rewrite                        | manual | 1 hr     | todo                                             |
-| **A9** | Repo public visibility flip + apply              | manual | 30 min   | todo                                             |
+| ID     | Item                                             | Type   | Effort   | Status                                                                 |
+| ------ | ------------------------------------------------ | ------ | -------- | ---------------------------------------------------------------------- |
+| **A1** | Calibration slope into [0.85, 1.15]              | code   | 1 sess   | **done** (`e4f3287`/`df05368`) — 0.99 calibrated                       |
+| **A2** | Per-specialty top-N-per-specialty fairness slice | code   | 0.5 sess | **done** (`b1592e8`) — equal-effort table in eval report               |
+| **A3** | Unit tests for paraphraser citation contract     | code   | 0.5 sess | **done** (`b1592e8`) — 6 tests, citation contract enforced             |
+| **A4** | Unit tests for practice performance module       | code   | 0.5 sess | **done** (`b1592e8`) — 6 tests across analyze + initiatives + override |
+| **A5** | Streamlit UI: cache + governance page            | code   | 1 sess   | **done** (`00e80d0` W5 multi-page Model Ops + cache)                   |
+| **A6** | Live CMS ASP fetch (quarterly scraper)           | code   | 1 sess   | todo                                                                   |
+| **A7** | Loom recording                                   | manual | 1 hr     | todo                                                                   |
+| **A8** | Resume + LinkedIn rewrite                        | manual | 1 hr     | todo                                                                   |
+| **A9** | Repo public visibility flip + apply              | manual | 30 min   | todo                                                                   |
 
 ### A1 — Calibration slope into target band ✓
 
