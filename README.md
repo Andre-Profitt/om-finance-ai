@@ -59,7 +59,7 @@ Nine stages, Databricks-native (Delta, Unity Catalog-ready schemas, MLflow track
 3. **Silver — drug economics + claim lines.** ASP ratios, NDC validity, paid/allowed ratios, specialty dimensions, 340B flags.
 4. **Gold — rule-based exception candidates.** Eight exception types in priority order: `access_pa_gap`, `gpo_340b_rebate_excluded`, `chargeback_validity_fail`, `biosimilar_conversion_miss`, `ndc_hcpcs_mismatch`, `asp_drift`, `underpayment`, `denial`.
 5. **Gold — LightGBM risk scoring + MLflow.** 30 features including specialty + PA + 340B flags; registered model with gain-based feature importance.
-6. **Gold — isotonic calibration (held-out fold).** 20% holdout; slope 1.22 after fit.
+6. **Gold — isotonic calibration (5-fold CV).** Out-of-fold isotonic; sample-weighted reliability slope **0.99** (target band 0.85–1.15).
 7. **RAG — evidence-grounded explanation.** Dense retrieval over 5 payer policies + 3 GPO contracts. Quote-or-abstain citation enforcement.
 8. **Governance — override log.** Append-only, simulated top-100 reviewer decisions.
 9. **Eval — business-outcome report.** Three rankings, rules-only baseline, citation precision, abstention rate, per-type precision.
@@ -96,7 +96,7 @@ Nine stages, Databricks-native (Delta, Unity Catalog-ready schemas, MLflow track
 **Model diagnostics:**
 
 - LightGBM valid AUC: 0.925
-- Calibration slope: 1.78 uncalibrated → **1.22 after held-out isotonic** (production-realistic)
+- Calibration slope: 1.12 uncalibrated → **0.99 after 5-fold CV isotonic** (within the reliability target band of 0.85–1.15)
 
 ## Sample output (auditable)
 

@@ -56,14 +56,14 @@ Feature importance (gain-based, top 5) is produced per run and logged to MLflow.
 
 On the seed-20260424 run:
 
-| Metric                                           | Value  | Notes                                       |
-| ------------------------------------------------ | ------ | ------------------------------------------- |
-| Valid AUC                                        | 0.925  | Internal model-debug metric only            |
-| Precision@top-100 (calibrated expected recovery) | 0.93   | Headline                                    |
-| Dollars captured @ top-100                       | $2.08M | Headline                                    |
-| Calibration slope (held-out isotonic)            | 1.22   | Target [0.85, 1.15]; close but above band   |
-| Citation precision on explained exceptions       | 99.7%  | Upstream RAG; not this model's metric alone |
-| Abstention rate                                  | 26.8%  | Upstream RAG                                |
+| Metric                                                                  | Value  | Notes                                       |
+| ----------------------------------------------------------------------- | ------ | ------------------------------------------- |
+| Valid AUC                                                               | 0.925  | Internal model-debug metric only            |
+| Precision@top-100 (calibrated expected recovery)                        | 0.93   | Headline                                    |
+| Dollars captured @ top-100                                              | $2.08M | Headline                                    |
+| Calibration slope (5-fold CV isotonic, sample-weighted reliability fit) | 0.99   | Target [0.85, 1.15] — in band               |
+| Citation precision on explained exceptions                              | 99.7%  | Upstream RAG; not this model's metric alone |
+| Abstention rate                                                         | 26.8%  | Upstream RAG                                |
 
 Metrics are written to `artifacts/eval_report.json` every run and to MLflow per training run.
 
@@ -76,7 +76,8 @@ Metrics are written to `artifacts/eval_report.json` every run and to MLflow per 
 
 ## 6. Calibration
 
-- Method: `sklearn.isotonic.IsotonicRegression` with `out_of_bounds='clip'`, fit on a 20% held-out fold
+- Method: `sklearn.isotonic.IsotonicRegression` with `out_of_bounds='clip'`, fit out-of-fold across a 5-fold StratifiedKFold (with single-holdout fallback when the positive class is too small to stratify)
+- Slope measurement: sample-count-weighted least-squares fit through bin-centered (predicted, observed) points (see DL-0015)
 - Output: `risk_score_calibrated` column stored alongside raw `risk_score`
 - Monitored: calibration slope per run; alarm threshold outside [0.85, 1.15] for two consecutive runs → model-refresh ticket
 
