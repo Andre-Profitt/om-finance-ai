@@ -82,17 +82,17 @@ Resume headline + 3 bullets per `docs/practice-performance-memo.md`. LinkedIn fe
 
 Moves from V1 demo to V2 deployable pilot. Sequenced for a single-practice DUA.
 
-| ID     | Item                                          | Type       | Effort | Depends | Status                                      |
-| ------ | --------------------------------------------- | ---------- | ------ | ------- | ------------------------------------------- |
-| **B1** | Per-payer policy corpus expansion             | doc + code | 1 sess | —       | **done** (`305ea3a`) — 10 docs              |
-| **B2** | Per-vendor GPO contract expansion             | doc + code | 1 sess | —       | **done** (`305ea3a`) — 6 docs               |
-| **B3** | Retrospective label plumbing schema + adapter | code       | 2 sess | —       | todo                                        |
-| **B4** | Scheduled calibration refresh job             | code       | 1 sess | A1      | todo                                        |
-| **B5** | Drift / alarm wiring                          | code       | 1 sess | B4      | **done** — 6 SQL alarms + runbook           |
-| **B6** | Unity Catalog RLS pattern + test              | code       | 1 sess | —       | **done** — UC DDL + Python helper + 6 tests |
-| **B7** | Reviewer UI production deployment path        | code       | 2 sess | A5      | todo                                        |
-| **B8** | CI hardening (matrix + lint + security scan)  | code       | 1 sess | —       | todo                                        |
-| **B9** | DUA + IRB language + privacy-office checklist | doc        | 1 sess | —       | todo                                        |
+| ID     | Item                                          | Type       | Effort | Depends | Status                                                      |
+| ------ | --------------------------------------------- | ---------- | ------ | ------- | ----------------------------------------------------------- |
+| **B1** | Per-payer policy corpus expansion             | doc + code | 1 sess | —       | **done** (`305ea3a`) — 10 docs                              |
+| **B2** | Per-vendor GPO contract expansion             | doc + code | 1 sess | —       | **done** (`305ea3a`) — 6 docs                               |
+| **B3** | Retrospective label plumbing schema + adapter | code       | 2 sess | —       | **done** — Pydantic schemas + adapter + 7 tests             |
+| **B4** | Scheduled calibration refresh job             | code       | 1 sess | A1      | **done** — Asset Bundle weekly job + promotion gate         |
+| **B5** | Drift / alarm wiring                          | code       | 1 sess | B4      | **done** — 6 SQL alarms + runbook                           |
+| **B6** | Unity Catalog RLS pattern + test              | code       | 1 sess | —       | **done** — UC DDL + Python helper + 6 tests                 |
+| **B7** | Reviewer UI production deployment path        | code       | 2 sess | A5      | **done** — Databricks App via `databricks.yml` + `app.yaml` |
+| **B8** | CI hardening (matrix + lint + security scan)  | code       | 1 sess | —       | **done** — Python 3.11/3.12, ruff, pip-audit, bandit        |
+| **B9** | DUA + IRB language + privacy-office checklist | doc        | 1 sess | —       | **done** — `docs/dua-irb-checklist.md`                      |
 
 ### B1 — Per-payer policy corpus expansion
 

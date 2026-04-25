@@ -1,0 +1,99 @@
+# Databricks Asset Bundle — V2 production deployment
+#
+# This bundle defines the deployment-ready configuration that ships with the
+# Control Tower. Local development uses the Python CLI directly; production
+# deploys via:
+#
+#   databricks bundle validate -t prod
+#   databricks bundle deploy -t prod
+#
+# The bundle assumes a target workspace with Unity Catalog enabled and the
+# `rev_integrity` catalog provisioned per docs/governance.md §3.
+
+bundle:
+  name: om-finance-ai-control-tower
+
+variables:
+  catalog:
+    description: Unity Catalog name for the Control Tower data + governance schemas.
+    default: rev_integrity
+  target_practice:
+    description: Default target practice for the practice-analysis job.
+    default: auto
+
+resources:
+  jobs:
+    daily_pipeline:
+      name: Control Tower — daily pipeline
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: America/Chicago
+      tasks:
+        - task_key: ingest_score_explain
+          notebook_task:
+            notebook_path: ./notebooks/run_pipeline.py
+          job_cluster_key: pipeline_cluster
+        - task_key: practice_analysis
+          notebook_task:
+            notebook_path: ./notebooks/run_practice_analysis.py
+          depends_on:
+            - task_key: ingest_score_explain
+          job_cluster_key: pipeline_cluster
+      job_clusters:
+        - job_cluster_key: pipeline_cluster
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: Standard_DS3_v2
+            num_workers: 1
+
+    weekly_calibration_refresh:
+      # Track B4 — fits a fresh isotonic calibrator on a rolling 30-day
+      # held-out fold and promotes only if calibration slope improves.
+      name: Control Tower — calibration refresh (weekly)
+      schedule:
+        quartz_cron_expression: "0 0 8 ? * SUN"
+        timezone_id: America/Chicago
+      tasks:
+        - task_key: refit_calibration
+          notebook_task:
+            notebook_path: ./notebooks/refit_calibration.py
+          job_cluster_key: pipeline_cluster
+        - task_key: promote_if_better
+          notebook_task:
+            notebook_path: ./notebooks/promote_calibrator.py
+          depends_on:
+            - task_key: refit_calibration
+          job_cluster_key: pipeline_cluster
+      job_clusters:
+        - job_cluster_key: pipeline_cluster
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: Standard_DS3_v2
+            num_workers: 1
+
+  apps:
+    reviewer_queue:
+      # Track B7 — Databricks App that wraps the Streamlit reviewer UI.
+      # Uses the `om-finance-ai` source code; main entry is the Streamlit
+      # multi-page app at src/oaifinance/ui/app.py.
+      name: om-finance-ai-reviewer
+      description: O&M Finance AI Control Tower reviewer queue
+      source_code_path: ./src/oaifinance/ui
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-DEV.cloud.databricks.com
+  prod:
+    mode: production
+    workspace:
+      host: https://adb-PROD.cloud.databricks.com
+    permissions:
+      - user_name: tpm@example.com
+        level: CAN_MANAGE
+      - group_name: rev_integrity_engineers
+        level: CAN_MANAGE
+      - group_name: rev_integrity_reviewers
+        level: CAN_USE
