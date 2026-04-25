@@ -115,6 +115,16 @@ GOLDEN_CITATIONS["underpayment"] |= {
 GOLDEN_CITATIONS["gpo_340b_rebate_excluded"] |= {
     ("gpo_payer_class_pricing", "Payer Class Definitions"),
 }
+GOLDEN_CITATIONS["jw_drug_waste"] = {
+    ("medicare_jw_drug_waste_policy", "JW Modifier Requirement"),
+    ("medicare_jw_drug_waste_policy", "Documentation"),
+    ("medicare_jw_drug_waste_policy", "Audit Exposure"),
+    ("medicare_jw_drug_waste_policy", "JZ Modifier (No Waste)"),
+    ("medicare_jw_drug_waste_policy", "Practice-Level Optimization"),
+    ("gpo_inventory_management_addendum", "JW Modifier Compliance"),
+    ("gpo_inventory_management_addendum", "Vial-Size Optimization"),
+    ("gpo_inventory_management_addendum", "Waste Cost Allocation"),
+}
 
 
 @dataclass

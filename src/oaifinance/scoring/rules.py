@@ -2,13 +2,14 @@
 
 Priority order (first match wins):
   1. access_pa_gap              — prior-auth documentation missing (CoverMyMeds-shaped)
-  2. gpo_340b_rebate_excluded   — 340B + GPO rebate double-dip
-  3. chargeback_validity_fail   — billed > 1.75x ASP
-  4. biosimilar_conversion_miss — reference on commercial where biosim preferred
-  5. ndc_hcpcs_mismatch         — crosswalk violation
-  6. asp_drift                  — billed > 1.5x ASP (non-chargeback)
-  7. underpayment               — paid < 0.9x allowed
-  8. denial                     — generic denial (non-PA)
+  2. jw_drug_waste              — JW modifier missing on single-dose container claim
+  3. gpo_340b_rebate_excluded   — 340B + GPO rebate double-dip
+  4. chargeback_validity_fail   — billed > 1.75x ASP
+  5. biosimilar_conversion_miss — reference on commercial where biosim preferred
+  6. ndc_hcpcs_mismatch         — crosswalk violation
+  7. asp_drift                  — billed > 1.5x ASP (non-chargeback)
+  8. underpayment               — paid < 0.9x allowed
+  9. denial                     — generic denial (non-PA)
 """
 
 from __future__ import annotations
@@ -41,6 +42,7 @@ def flag(claim_lines: pl.DataFrame | None = None) -> pl.DataFrame:
         (pl.col("denial_reason_pa") | (pl.col("pa_gap") & pl.col("is_denied"))).alias(
             "rule_access_pa_gap"
         ),
+        pl.col("jw_gap").alias("rule_jw_drug_waste"),
     ).with_columns(
         (
             pl.col("is_biosimilar_reference")
@@ -63,11 +65,14 @@ def flag(claim_lines: pl.DataFrame | None = None) -> pl.DataFrame:
         | pl.col("rule_biosimilar_conversion_miss")
         | pl.col("rule_chargeback_validity_fail")
         | pl.col("rule_access_pa_gap")
+        | pl.col("rule_jw_drug_waste")
     )
 
     exc_type = (
         pl.when(pl.col("rule_access_pa_gap"))
         .then(pl.lit("access_pa_gap"))
+        .when(pl.col("rule_jw_drug_waste"))
+        .then(pl.lit("jw_drug_waste"))
         .when(pl.col("rule_gpo_340b_excluded"))
         .then(pl.lit("gpo_340b_rebate_excluded"))
         .when(pl.col("rule_chargeback_validity_fail"))

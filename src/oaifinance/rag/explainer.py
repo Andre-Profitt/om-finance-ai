@@ -62,6 +62,11 @@ QUERY_TEMPLATES = {
         "pending authorization; access delay and expected determination "
         "timeline"
     ),
+    "jw_drug_waste": (
+        "JW modifier required for single-dose container drug {hcpcs}; "
+        "waste reporting; CMS Medicare Claims Processing Manual; vial-size "
+        "optimization; audit exposure on missing JW or JZ modifier"
+    ),
 }
 
 EXPLANATION_TEMPLATES = {
@@ -89,6 +94,13 @@ EXPLANATION_TEMPLATES = {
         "{paid_ratio:.1%} of allowed amount. Per {doc_title} §{section_title}: "
         '"{quote}" Variance: ${dollars_at_risk:,.0f}. Action: request '
         "reconsideration citing contract reimbursement methodology."
+    ),
+    "jw_drug_waste": (
+        "Claim {claim_id} for HCPCS {hcpcs} ({payer}) is for a single-dose "
+        "container drug but the JW (or JZ) modifier is not on file. Per "
+        '{doc_title} §{section_title}: "{quote}" Audit-recovery exposure: '
+        "${dollars_at_risk:,.0f}. Action: append JW with documented discarded "
+        "amount, or JZ if no waste, then resubmit."
     ),
 }
 

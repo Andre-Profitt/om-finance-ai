@@ -82,3 +82,13 @@ def test_equal_effort_specialty_slice(pipeline_report):
     )
     for sp, p in report.precision_by_specialty_equal_effort.items():
         assert 0.0 <= p <= 1.0, f"precision out of range for {sp}: {p}"
+
+
+def test_jw_drug_waste_present(pipeline_report):
+    """C3 invariant — JW drug-waste exception type fires + carries dollars at risk."""
+    exceptions = pl.read_parquet(GOLD_DIR / "exception_candidates.parquet")
+    types = set(exceptions["exception_type"].unique().to_list())
+    assert "jw_drug_waste" in types, "missing jw_drug_waste exception type"
+    jw_rows = exceptions.filter(pl.col("exception_type") == "jw_drug_waste")
+    assert len(jw_rows) > 0, "no JW gap candidates flagged"
+    assert jw_rows["dollars_at_risk"].sum() > 0

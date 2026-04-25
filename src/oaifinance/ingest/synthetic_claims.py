@@ -81,6 +81,36 @@ GPO_REBATE_CLAWBACK_RATE = 0.020
 GPO_CLAWBACK_REALIZED_RATE = 0.55
 BIOSIMILAR_MISS_REALIZED_RATE = 0.48
 
+# JW drug-waste / vial-management dynamics. Single-dose containers commonly
+# discard 5-15% of vial after administration; CMS requires the JW modifier on
+# the wasted-amount claim line when applicable. Practices miss the modifier
+# at a non-trivial rate, exposing waste cost to audit recovery.
+VIAL_OVERSIZE_RATE = 0.10  # fractional vial waste expected per single-dose admin
+JW_MODIFIER_PRESENT_RATE = 0.82  # 18% miss rate baseline
+JW_GAP_REALIZED_RATE = 0.45  # share of JW-gap claims that realize recoverable $
+JW_DRUGS_REQUIRING_MODIFIER = {
+    # Oncology single-dose containers
+    "J9035",
+    "J9299",
+    "J9312",
+    "J9228",
+    "J9145",
+    "J9173",
+    "J9271",
+    "J9317",
+    "J9144",
+    "J9042",
+    "J9023",
+    # Multispecialty single-dose containers
+    "J0178",
+    "J1602",
+    "J3357",
+    "J1559",
+    "J1745",
+    "J3380",
+    "J2323",
+}
+
 # Clinically plausible total-mg target per admin by HCPCS — covers oncology
 # and multispecialty.
 HCPCS_TARGET_MG = {
@@ -172,6 +202,10 @@ def generate(
         pa_on_file = (not pa_required) or (rng.random() < PA_ON_FILE_GIVEN_REQUIRED)
         pa_gap = pa_required and not pa_on_file
 
+        jw_required = hcpcs in JW_DRUGS_REQUIRING_MODIFIER
+        jw_modifier_present = (not jw_required) or rng.random() < JW_MODIFIER_PRESENT_RATE
+        jw_gap = jw_required and not jw_modifier_present
+
         units = _sample_units(rng, hcpcs, dosage_per_unit)
 
         base_error = PAYER_BASE_ERROR[payer] + (0.04 if is_bios_ref else 0.0)
@@ -257,6 +291,10 @@ def generate(
             leakage_amount += allowed_total * BIOSIMILAR_MISSED_REBATE_RATE
         if gpo_340b_double_dip and rng.random() < GPO_CLAWBACK_REALIZED_RATE:
             leakage_amount += allowed_total * GPO_REBATE_CLAWBACK_RATE
+        # JW-gap audit exposure: typical waste is VIAL_OVERSIZE_RATE of the
+        # billed amount. Materializes a fraction of the time (audit hit rate).
+        if jw_gap and rng.random() < JW_GAP_REALIZED_RATE:
+            leakage_amount += allowed_total * VIAL_OVERSIZE_RATE
 
         access_delay_cost = PA_DELAY_COST_PER_CLAIM if pa_gap else 0.0
 
@@ -293,6 +331,9 @@ def generate(
                 "pa_gap": bool(pa_gap),
                 "denial_reason_pa": bool(denial_reason_pa),
                 "access_delay_cost": float(access_delay_cost),
+                "jw_required": bool(jw_required),
+                "jw_modifier_present": bool(jw_modifier_present),
+                "jw_gap": bool(jw_gap),
                 "_true_leakage_amount": round(float(leakage_amount), 2),
                 "_true_leakage": bool(true_leakage),
             }

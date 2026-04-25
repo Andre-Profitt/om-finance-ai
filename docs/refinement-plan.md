@@ -141,13 +141,13 @@ Templates and a privacy-office checklist for moving to retrospective real labels
 
 New visible capabilities the demo can highlight.
 
-| ID     | Item                                                | Type       | Effort | Depends | Status                                      |
-| ------ | --------------------------------------------------- | ---------- | ------ | ------- | ------------------------------------------- |
-| **C1** | LLM paraphrasing eval — A/B vs template             | code + doc | 2 sess | —       | todo                                        |
-| **C2** | Multispecialty drug expansion                       | code       | 1 sess | —       | **done** — +4 HCPCS, $2.08M→$2.45M captured |
-| **C3** | Inventory / JW modifier / drug-waste exception type | code       | 2 sess | —       | todo                                        |
-| **C4** | Prior-auth propensity model (pre-bill PA risk)      | code       | 2 sess | —       | todo                                        |
-| **C5** | Site-of-care optimization scenario                  | code       | 1 sess | —       | todo                                        |
+| ID     | Item                                                | Type       | Effort | Depends | Status                                                 |
+| ------ | --------------------------------------------------- | ---------- | ------ | ------- | ------------------------------------------------------ |
+| **C1** | LLM paraphrasing eval — A/B vs template             | code + doc | 2 sess | —       | todo                                                   |
+| **C2** | Multispecialty drug expansion                       | code       | 1 sess | —       | **done** — +4 HCPCS, $2.08M→$2.45M captured            |
+| **C3** | Inventory / JW modifier / drug-waste exception type | code       | 2 sess | —       | **done** — 9th exception type, 100% citation precision |
+| **C4** | Prior-auth propensity model (pre-bill PA risk)      | code       | 2 sess | —       | todo                                                   |
+| **C5** | Site-of-care optimization scenario                  | code       | 1 sess | —       | todo                                                   |
 
 ### C1 — LLM paraphrasing eval
 
