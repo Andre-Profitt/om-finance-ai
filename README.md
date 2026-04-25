@@ -55,24 +55,25 @@ Append-only override log with model version, prompt version, retrieved-doc versi
 Nine stages, Databricks-native (Delta, Unity Catalog-ready schemas, MLflow tracking). Runs locally on Parquet today; the same code deploys to Databricks on Azure without architectural change.
 
 1. **Bronze — CMS ingest.** Real CMS ASP + NDC-HCPCS crosswalk (sample snapshot committed; live-fetch hook ready).
-2. **Bronze — synthetic claims.** 5,000 claims across 14 HCPCS codes spanning oncology + retinal + rheumatology + GI + neurology; 4 payer archetypes; latent error state observed noisily by rules.
-3. **Silver — drug economics + claim lines.** ASP ratios, NDC validity, paid/allowed ratios, specialty dimensions, 340B flags.
-4. **Gold — rule-based exception candidates.** Eight exception types in priority order: `access_pa_gap`, `gpo_340b_rebate_excluded`, `chargeback_validity_fail`, `biosimilar_conversion_miss`, `ndc_hcpcs_mismatch`, `asp_drift`, `underpayment`, `denial`.
-5. **Gold — LightGBM risk scoring + MLflow.** 30 features including specialty + PA + 340B flags; registered model with gain-based feature importance.
-6. **Gold — isotonic calibration (5-fold CV).** Out-of-fold isotonic; sample-weighted reliability slope **0.99** (target band 0.85–1.15).
-7. **RAG — evidence-grounded explanation.** Dense retrieval over 5 payer policies + 3 GPO contracts. Quote-or-abstain citation enforcement.
-8. **Governance — override log.** Append-only, simulated top-100 reviewer decisions.
-9. **Eval — business-outcome report.** Three rankings, rules-only baseline, citation precision, abstention rate, per-type precision.
+2. **Bronze — synthetic claims.** 5,000 claims across **18 HCPCS codes** spanning oncology + retinal + rheumatology + GI + neurology; 4 payer archetypes; latent error state observed noisily by rules; site-of-care + JW-modifier compliance flags.
+3. **Silver — drug economics + claim lines.** ASP ratios, NDC validity, paid/allowed ratios, specialty dimensions, 340B flags, site-of-care, JW required.
+4. **Gold — rule-based exception candidates.** **Ten exception types** in priority order: `access_pa_gap`, `jw_drug_waste`, `gpo_340b_rebate_excluded`, `chargeback_validity_fail`, `biosimilar_conversion_miss`, `site_of_care_underpayment`, `ndc_hcpcs_mismatch`, `asp_drift`, `underpayment`, `denial`.
+5. **Gold — LightGBM risk scoring + MLflow.** Registered model with gain-based feature importance; separate `pa_propensity` model for pre-bill PA-denial risk.
+6. **Gold — 5-fold CV isotonic calibration.** Out-of-fold isotonic with sample-weighted reliability slope **0.99** (target band 0.85–1.15).
+7. **RAG — evidence-grounded explanation.** Dense retrieval over **10 payer policies + 6 GPO contracts**. Quote-or-abstain citation enforcement; optional flag-gated LLM paraphrase layer with strict post-generation citation verifier.
+8. **Governance — override log.** Append-only, simulated top-100 reviewer decisions; Unity Catalog RLS pattern with practice-scoped row filters.
+9. **Eval — business-outcome report.** Three rankings, rules-only baseline, citation precision, abstention rate, per-type + per-specialty precision, equal-effort fairness slice.
 
 ## Headline results (5,000 synthetic claims, seed 20260424)
 
-**Reviewer-queue rankings on 1,573 exception candidates across 8 types:**
+**Reviewer-queue rankings on ~1,750 exception candidates across 10 types:**
 
-| Metric                        | P(leakage) | expected recovery | **expected recovery (calibrated)** |
-| ----------------------------- | ---------- | ----------------- | ---------------------------------- |
-| Precision@100                 | 100.0%     | 93.0%             | **93.0%**                          |
-| Dollars captured @ top-100    | $1,042,224 | $2,077,531        | **$2,077,531**                     |
-| Dollars / reviewer-hour @ 100 | $125,067/h | $249,304/h        | **$249,304/h**                     |
+| Metric                       | P(leakage) | expected recovery | **expected recovery (calibrated)** |
+| ---------------------------- | ---------- | ----------------- | ---------------------------------- |
+| Precision@100                | 100.0%     | 96.0%             | **96.0%**                          |
+| Dollars captured @ top-100   | $1.21M     | $2.37M            | **$2.37M**                         |
+| Citation precision (overall) | —          | —                 | **100.0%**                         |
+| Abstention rate              | —          | —                 | **15.1%**                          |
 
 **Network view (20 practices, synthesized from the same run):**
 
