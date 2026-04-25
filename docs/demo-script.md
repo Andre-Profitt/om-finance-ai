@@ -23,7 +23,7 @@ make demo
 Call out as the stages scroll:
 
 - **"Bronze: real CMS ASP + 5k synthetic claims across oncology and multispecialty — 14 HCPCS spanning retinal, rheum, GI, neurology."**
-- **"Gold: eight exception types, priority-ordered — access PA gap first because that's pre-bill, then 340B and contract economics, then revenue cycle."**
+- **"Gold: ten exception types, priority-ordered — access PA gap first because that's pre-bill, then JW drug waste, then 340B and contract economics, then revenue cycle."**
 - **"LightGBM on 30 features, MLflow-tracked and registered. AUC 0.92 — on noisy labels so it's earned."**
 - **"Held-out isotonic calibration. Cross-validated in V2."**
 - **"RAG: retrieval plus a template that quotes the cited clause, or abstains."**
