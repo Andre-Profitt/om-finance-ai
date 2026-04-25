@@ -111,6 +111,20 @@ JW_DRUGS_REQUIRING_MODIFIER = {
     "J2323",
 }
 
+# Site-of-care dynamics (C5). Commercial payers reduce reimbursement on
+# non-preferred-site administration of specialty drugs; the gap is
+# recoverable via contract reconsideration in some share of cases.
+SITE_OF_CARE_OPTIONS = ("hopd", "freestanding", "home")
+SITE_OF_CARE_DISTRIBUTION = (0.55, 0.40, 0.05)
+PAYER_PREFERRED_SITE = {
+    "medicare_ffs": "hopd",
+    "commercial_national": "hopd",
+    "commercial_regional": "hopd",
+    "medicaid_managed": "hopd",
+}
+SITE_MISMATCH_PAYMENT_HAIRCUT = 0.15
+SITE_MISMATCH_REALIZED_RATE = 0.55
+
 # Clinically plausible total-mg target per admin by HCPCS — covers oncology
 # and multispecialty.
 HCPCS_TARGET_MG = {
@@ -206,6 +220,12 @@ def generate(
         jw_modifier_present = (not jw_required) or rng.random() < JW_MODIFIER_PRESENT_RATE
         jw_gap = jw_required and not jw_modifier_present
 
+        site_of_care = str(
+            rng.choice(np.array(SITE_OF_CARE_OPTIONS), p=np.array(SITE_OF_CARE_DISTRIBUTION))
+        )
+        preferred_site = PAYER_PREFERRED_SITE[payer]
+        site_mismatch = site_of_care != preferred_site and payer in COMMERCIAL_PAYERS
+
         units = _sample_units(rng, hcpcs, dosage_per_unit)
 
         base_error = PAYER_BASE_ERROR[payer] + (0.04 if is_bios_ref else 0.0)
@@ -295,6 +315,8 @@ def generate(
         # billed amount. Materializes a fraction of the time (audit hit rate).
         if jw_gap and rng.random() < JW_GAP_REALIZED_RATE:
             leakage_amount += allowed_total * VIAL_OVERSIZE_RATE
+        if site_mismatch and status == "paid" and rng.random() < SITE_MISMATCH_REALIZED_RATE:
+            leakage_amount += allowed_total * SITE_MISMATCH_PAYMENT_HAIRCUT
 
         access_delay_cost = PA_DELAY_COST_PER_CLAIM if pa_gap else 0.0
 
@@ -334,6 +356,9 @@ def generate(
                 "jw_required": bool(jw_required),
                 "jw_modifier_present": bool(jw_modifier_present),
                 "jw_gap": bool(jw_gap),
+                "site_of_care": site_of_care,
+                "preferred_site": preferred_site,
+                "site_mismatch": bool(site_mismatch),
                 "_true_leakage_amount": round(float(leakage_amount), 2),
                 "_true_leakage": bool(true_leakage),
             }

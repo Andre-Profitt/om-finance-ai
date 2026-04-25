@@ -115,6 +115,12 @@ GOLDEN_CITATIONS["underpayment"] |= {
 GOLDEN_CITATIONS["gpo_340b_rebate_excluded"] |= {
     ("gpo_payer_class_pricing", "Payer Class Definitions"),
 }
+GOLDEN_CITATIONS["site_of_care_underpayment"] = {
+    ("commercial_regional_prior_auth_oncology", "Administration and Billing Site"),
+    ("commercial_national_nccn_compendium", "Site of Care"),
+    ("uhc_oncology_specialty_drug_policy", "Coverage and Site of Service"),
+    ("bcbs_state_oncology_pa_workflow", "Site of Care"),
+}
 GOLDEN_CITATIONS["jw_drug_waste"] = {
     ("medicare_jw_drug_waste_policy", "JW Modifier Requirement"),
     ("medicare_jw_drug_waste_policy", "Documentation"),

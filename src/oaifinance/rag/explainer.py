@@ -67,6 +67,12 @@ QUERY_TEMPLATES = {
         "waste reporting; CMS Medicare Claims Processing Manual; vial-size "
         "optimization; audit exposure on missing JW or JZ modifier"
     ),
+    "site_of_care_underpayment": (
+        "Site of care administration not at the payer's preferred site for "
+        "specialty drug {hcpcs} on {payer}; reimbursement reduced to "
+        "preferred-site allowable; contractual underpayment; site-of-care "
+        "review and reconsideration"
+    ),
 }
 
 EXPLANATION_TEMPLATES = {

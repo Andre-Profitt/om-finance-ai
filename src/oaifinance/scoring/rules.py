@@ -43,6 +43,9 @@ def flag(claim_lines: pl.DataFrame | None = None) -> pl.DataFrame:
             "rule_access_pa_gap"
         ),
         pl.col("jw_gap").alias("rule_jw_drug_waste"),
+        (pl.col("site_mismatch") & (pl.col("adjudication_status") == "paid")).alias(
+            "rule_site_of_care_underpayment"
+        ),
     ).with_columns(
         (
             pl.col("is_biosimilar_reference")
@@ -66,6 +69,7 @@ def flag(claim_lines: pl.DataFrame | None = None) -> pl.DataFrame:
         | pl.col("rule_chargeback_validity_fail")
         | pl.col("rule_access_pa_gap")
         | pl.col("rule_jw_drug_waste")
+        | pl.col("rule_site_of_care_underpayment")
     )
 
     exc_type = (
@@ -79,6 +83,8 @@ def flag(claim_lines: pl.DataFrame | None = None) -> pl.DataFrame:
         .then(pl.lit("chargeback_validity_fail"))
         .when(pl.col("rule_biosimilar_conversion_miss"))
         .then(pl.lit("biosimilar_conversion_miss"))
+        .when(pl.col("rule_site_of_care_underpayment"))
+        .then(pl.lit("site_of_care_underpayment"))
         .when(pl.col("rule_ndc_mismatch"))
         .then(pl.lit("ndc_hcpcs_mismatch"))
         .when(pl.col("rule_asp_drift"))
