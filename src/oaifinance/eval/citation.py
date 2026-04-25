@@ -77,7 +77,43 @@ GOLDEN_CITATIONS: dict[str, set[tuple[str, str]]] = {
         ("commercial_regional_prior_auth_oncology", "Prior Authorization Required"),
         ("medicare_lcd_oncology_iv_biologics", "Prior Authorization"),
         ("medicaid_managed_specialty_pharmacy", "Timely Filing and Appeals"),
+        ("uhc_oncology_specialty_drug_policy", "Prior Authorization"),
+        ("bcbs_state_oncology_pa_workflow", "Prior Authorization Required"),
+        ("bcbs_state_oncology_pa_workflow", "Required Documentation"),
+        ("bcbs_state_oncology_pa_workflow", "Access-Delay Tracking"),
+        ("medicare_advantage_oncology_coverage", "Prior Authorization"),
+        ("medicare_advantage_oncology_coverage", "Step Therapy Under Part B"),
     },
+}
+
+# V2 corpus expansion (B1 + B2): newly admissible citations for existing types.
+# Added inline to keep the golden map authoritative as one structure.
+GOLDEN_CITATIONS["biosimilar_conversion_miss"] |= {
+    ("uhc_oncology_specialty_drug_policy", "Biosimilar Tier and Step Therapy"),
+    ("aetna_oncology_step_therapy", "Step Therapy Sequence"),
+    ("aetna_oncology_step_therapy", "Conversion Reporting"),
+    ("aetna_oncology_step_therapy", "Reference-Product Audit"),
+}
+GOLDEN_CITATIONS["chargeback_validity_fail"] |= {
+    ("gpo_specialty_distribution_addendum", "Substitution Rules"),
+    ("gpo_payer_class_pricing", "Validation Logic"),
+    ("gpo_payer_class_pricing", "Differential Pricing"),
+}
+GOLDEN_CITATIONS["ndc_hcpcs_mismatch"] |= {
+    ("uhc_oncology_specialty_drug_policy", "Coding and NDC Validation"),
+    ("bcbs_state_oncology_pa_workflow", "NDC-HCPCS Coding Validation"),
+    ("medicare_advantage_oncology_coverage", "NDC-HCPCS Validation"),
+}
+GOLDEN_CITATIONS["denial"] |= {
+    ("medicare_advantage_oncology_coverage", "Determinations and Appeals"),
+    ("aetna_oncology_step_therapy", "Appeal Path"),
+}
+GOLDEN_CITATIONS["underpayment"] |= {
+    ("bcbs_state_oncology_pa_workflow", "Site of Care"),
+    ("uhc_oncology_specialty_drug_policy", "Coverage and Site of Service"),
+}
+GOLDEN_CITATIONS["gpo_340b_rebate_excluded"] |= {
+    ("gpo_payer_class_pricing", "Payer Class Definitions"),
 }
 
 
