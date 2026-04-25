@@ -28,21 +28,21 @@ Stop and re-baseline after every ship. The portfolio must stay demoable at all t
 
 Tighten the current portfolio. Highest signal-per-hour. All in-session except Loom.
 
-| ID     | Item                                             | Type   | Effort   | Status |
-| ------ | ------------------------------------------------ | ------ | -------- | ------ |
-| **A1** | Calibration slope into [0.85, 1.15]              | code   | 1 sess   | todo   |
-| **A2** | Per-specialty top-N-per-specialty fairness slice | code   | 0.5 sess | todo   |
-| **A3** | Unit tests for paraphraser citation contract     | code   | 0.5 sess | todo   |
-| **A4** | Unit tests for practice performance module       | code   | 0.5 sess | todo   |
-| **A5** | Streamlit UI: cache + governance page            | code   | 1 sess   | todo   |
-| **A6** | Live CMS ASP fetch (quarterly scraper)           | code   | 1 sess   | todo   |
-| **A7** | Loom recording                                   | manual | 1 hr     | todo   |
-| **A8** | Resume + LinkedIn rewrite                        | manual | 1 hr     | todo   |
-| **A9** | Repo public visibility flip + apply              | manual | 30 min   | todo   |
+| ID     | Item                                             | Type   | Effort   | Status                                           |
+| ------ | ------------------------------------------------ | ------ | -------- | ------------------------------------------------ |
+| **A1** | Calibration slope into [0.85, 1.15]              | code   | 1 sess   | **done** (`e4f3287`/`df05368`) — 0.99 calibrated |
+| **A2** | Per-specialty top-N-per-specialty fairness slice | code   | 0.5 sess | todo                                             |
+| **A3** | Unit tests for paraphraser citation contract     | code   | 0.5 sess | todo                                             |
+| **A4** | Unit tests for practice performance module       | code   | 0.5 sess | todo                                             |
+| **A5** | Streamlit UI: cache + governance page            | code   | 1 sess   | todo                                             |
+| **A6** | Live CMS ASP fetch (quarterly scraper)           | code   | 1 sess   | todo                                             |
+| **A7** | Loom recording                                   | manual | 1 hr     | todo                                             |
+| **A8** | Resume + LinkedIn rewrite                        | manual | 1 hr     | todo                                             |
+| **A9** | Repo public visibility flip + apply              | manual | 30 min   | todo                                             |
 
-### A1 — Calibration slope into target band
+### A1 — Calibration slope into target band ✓
 
-Current 1.22 (CV isotonic, 5-fold). Try: temperature scaling first (cheaper than retraining), then sample-weighted retraining if temperature alone doesn't move it. Acceptance: slope ∈ [0.85, 1.15] on the smoke-run config; smoke-test invariant tightened to that band.
+**Shipped 2026-04-25** (commits `e4f3287` + `df05368`). Root cause was the slope _measurement_, not the calibrator: unweighted polyfit through 10 bin centers was dominated by sparse middle bins on the bimodal post-isotonic score distribution. Fix is sample-count-weighted polyfit (sqrt(n)) — one numpy kwarg. Calibrated slope: 1.22 → **0.99**, in the standard reliability-diagram band [0.85, 1.15]. Smoke test invariant tightened from [0.70, 2.00] to [0.80, 1.20]. See DL-0015 for rationale.
 
 ### A2 — Per-specialty top-N-per-specialty
 
