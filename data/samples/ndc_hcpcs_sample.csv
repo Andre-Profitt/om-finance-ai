@@ -21,3 +21,9 @@ ndc_code,hcpcs_code,labeler_name,brand_name,package_size_mg,billed_units_per_pac
 57894-060-03,J3357,Janssen,Stelara,90,90
 57894-073-01,J3357,Janssen,Stelara IV,130,130
 50242-150-01,J1559,Genentech,Ocrevus,300,30
+50242-917-01,J9023,Genentech,Tecentriq,1200,120
+50242-917-02,J9023,Genentech,Tecentriq,840,84
+0069-0809-01,J1745,Janssen,Remicade,100,10
+0069-0808-01,J1745,Janssen,Remicade Inflectra,100,10
+57894-110-01,J3380,Takeda,Entyvio,300,300
+59075-730-01,J2323,Biogen,Tysabri,300,300

@@ -13,3 +13,7 @@ J0178,"Aflibercept injection",1,468.210,2026-04-01,false,retinal
 J1602,"Golimumab IV injection",1,36.540,2026-04-01,false,rheumatology
 J3357,"Ustekinumab SC/IV injection",1,75.890,2026-04-01,false,gastroenterology
 J1559,"Ocrelizumab injection",10,239.740,2026-04-01,false,neurology
+J9023,"Atezolizumab injection",10,90.560,2026-04-01,false,oncology
+J1745,"Infliximab IV injection",10,93.420,2026-04-01,true,rheumatology
+J3380,"Vedolizumab IV injection",1,73.960,2026-04-01,false,gastroenterology
+J2323,"Natalizumab injection",1,25.880,2026-04-01,false,neurology

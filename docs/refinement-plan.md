@@ -82,17 +82,17 @@ Resume headline + 3 bullets per `docs/practice-performance-memo.md`. LinkedIn fe
 
 Moves from V1 demo to V2 deployable pilot. Sequenced for a single-practice DUA.
 
-| ID     | Item                                          | Type       | Effort | Depends | Status |
-| ------ | --------------------------------------------- | ---------- | ------ | ------- | ------ |
-| **B1** | Per-payer policy corpus expansion             | doc + code | 1 sess | —       | todo   |
-| **B2** | Per-vendor GPO contract expansion             | doc + code | 1 sess | —       | todo   |
-| **B3** | Retrospective label plumbing schema + adapter | code       | 2 sess | —       | todo   |
-| **B4** | Scheduled calibration refresh job             | code       | 1 sess | A1      | todo   |
-| **B5** | Drift / alarm wiring                          | code       | 1 sess | B4      | todo   |
-| **B6** | Unity Catalog RLS pattern + test              | code       | 1 sess | —       | todo   |
-| **B7** | Reviewer UI production deployment path        | code       | 2 sess | A5      | todo   |
-| **B8** | CI hardening (matrix + lint + security scan)  | code       | 1 sess | —       | todo   |
-| **B9** | DUA + IRB language + privacy-office checklist | doc        | 1 sess | —       | todo   |
+| ID     | Item                                          | Type       | Effort | Depends | Status                         |
+| ------ | --------------------------------------------- | ---------- | ------ | ------- | ------------------------------ |
+| **B1** | Per-payer policy corpus expansion             | doc + code | 1 sess | —       | **done** (`305ea3a`) — 10 docs |
+| **B2** | Per-vendor GPO contract expansion             | doc + code | 1 sess | —       | **done** (`305ea3a`) — 6 docs  |
+| **B3** | Retrospective label plumbing schema + adapter | code       | 2 sess | —       | todo                           |
+| **B4** | Scheduled calibration refresh job             | code       | 1 sess | A1      | todo                           |
+| **B5** | Drift / alarm wiring                          | code       | 1 sess | B4      | todo                           |
+| **B6** | Unity Catalog RLS pattern + test              | code       | 1 sess | —       | todo                           |
+| **B7** | Reviewer UI production deployment path        | code       | 2 sess | A5      | todo                           |
+| **B8** | CI hardening (matrix + lint + security scan)  | code       | 1 sess | —       | todo                           |
+| **B9** | DUA + IRB language + privacy-office checklist | doc        | 1 sess | —       | todo                           |
 
 ### B1 — Per-payer policy corpus expansion
 
@@ -141,13 +141,13 @@ Templates and a privacy-office checklist for moving to retrospective real labels
 
 New visible capabilities the demo can highlight.
 
-| ID     | Item                                                | Type       | Effort | Depends | Status |
-| ------ | --------------------------------------------------- | ---------- | ------ | ------- | ------ |
-| **C1** | LLM paraphrasing eval — A/B vs template             | code + doc | 2 sess | —       | todo   |
-| **C2** | Multispecialty drug expansion                       | code       | 1 sess | —       | todo   |
-| **C3** | Inventory / JW modifier / drug-waste exception type | code       | 2 sess | —       | todo   |
-| **C4** | Prior-auth propensity model (pre-bill PA risk)      | code       | 2 sess | —       | todo   |
-| **C5** | Site-of-care optimization scenario                  | code       | 1 sess | —       | todo   |
+| ID     | Item                                                | Type       | Effort | Depends | Status                                      |
+| ------ | --------------------------------------------------- | ---------- | ------ | ------- | ------------------------------------------- |
+| **C1** | LLM paraphrasing eval — A/B vs template             | code + doc | 2 sess | —       | todo                                        |
+| **C2** | Multispecialty drug expansion                       | code       | 1 sess | —       | **done** — +4 HCPCS, $2.08M→$2.45M captured |
+| **C3** | Inventory / JW modifier / drug-waste exception type | code       | 2 sess | —       | todo                                        |
+| **C4** | Prior-auth propensity model (pre-bill PA risk)      | code       | 2 sess | —       | todo                                        |
+| **C5** | Site-of-care optimization scenario                  | code       | 1 sess | —       | todo                                        |
 
 ### C1 — LLM paraphrasing eval
 

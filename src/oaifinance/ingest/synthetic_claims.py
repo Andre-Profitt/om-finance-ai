@@ -103,6 +103,11 @@ HCPCS_TARGET_MG = {
     "J3357": 130,
     # Neurology (ocrelizumab 600mg every 6 months)
     "J1559": 300,
+    # Oncology second-line + multispecialty additions (C2 expansion)
+    "J9023": 1200,  # atezolizumab Tecentriq 1200mg q3w
+    "J1745": 375,  # infliximab 5 mg/kg ~75kg
+    "J3380": 300,  # vedolizumab Entyvio 300mg q8w
+    "J2323": 300,  # natalizumab Tysabri 300mg q4w
 }
 
 
