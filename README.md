@@ -4,7 +4,7 @@
 
 > The finance-side operating layer above O&M's existing practice-facing capabilities (Glide Health claims acceptance, CoverMyMeds access automation, Onmark GPO savings, Regimen Profiler / Practice Insights analytics, iKnowMed EHR, Ontada data). Focused on ROI sizing, exception prioritization, evidence-grounded explanation, controllership audit trail, and adoption metrics — so practices can reduce administrative burden, accelerate access, and keep providers focused on patients.
 
-**Status:** V1.1 shipped (Weeks 0–4 + polish + V2 hero features). Working end-to-end pipeline: **ten** exception types across revenue-cycle + access + contract economics; multispecialty coverage across five specialties; 5-fold CV isotonic calibration; evidence-grounded RAG with honest abstention; flag-gated LLM paraphrase layer with strict citation contract; simulated override log; per-practice performance + acquisition model; governance reference architecture (with V2 retrospective-label schemas + Unity Catalog RLS pattern); eight Databricks SQL dashboard queries + six drift alarms + governance DDL; Streamlit reviewer-queue mock; CI runs tests + end-to-end pipeline + practice analysis on every push (lint + security advisory). See **[docs/current-results.md](docs/current-results.md)** for canonical headline numbers and **[docs/refinement-plan.md](docs/refinement-plan.md)** for what shipped vs. parked V2/V3 backlog.
+**Status:** V1.1 shipped (Weeks 0–4 + polish + V2 hero features). Working end-to-end pipeline: **ten** exception types across revenue-cycle + access + contract economics; multispecialty coverage across five specialties; 5-fold CV isotonic calibration; evidence-grounded RAG with honest abstention; flag-gated LLM paraphrase layer with strict citation contract; simulated override log; per-practice performance + acquisition model; governance reference architecture (with V2 retrospective-label schemas + Unity Catalog RLS pattern); **9 Databricks SQL query files (8 V1 dashboard panels + 1 V2 working-capital / DSO exposure query)** + six drift alarms + governance DDL; Streamlit reviewer-queue mock; CI runs tests + end-to-end pipeline + practice analysis on every push (lint + security advisory). See **[docs/current-results.md](docs/current-results.md)** for canonical headline numbers and **[docs/refinement-plan.md](docs/refinement-plan.md)** for what shipped vs. parked V2/V3 backlog.
 
 **Author:** Andre Profitt · [LinkedIn](https://www.linkedin.com/in/andreprofitt) · built as a public Lead-TPM-Finance-AI portfolio artifact.
 
@@ -114,27 +114,27 @@ without a model-generated explanation.
 
 ## Docs
 
-| Surface                                 | Artifact                                                                               | Status                       |
-| --------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------- |
-| Product thesis                          | [docs/charter.md](docs/charter.md)                                                     | v0.1                         |
-| System design                           | [docs/architecture.md](docs/architecture.md)                                           | v1                           |
-| Business case (with bear case)          | [docs/roi-model.md](docs/roi-model.md)                                                 | v1                           |
-| Product requirements                    | [docs/prd.md](docs/prd.md)                                                             | v1                           |
-| **Current results — canonical numbers** | [docs/current-results.md](docs/current-results.md)                                     | **single source of truth**   |
-| **Practice performance memo**           | [docs/practice-performance-memo.md](docs/practice-performance-memo.md)                 | v1                           |
-| **Governance reference architecture**   | [docs/governance.md](docs/governance.md)                                               | v1                           |
-| **Discovery + usability plan**          | [docs/discovery-plan.md](docs/discovery-plan.md)                                       | **v1**                       |
-| **Value-realization runbook**           | [docs/value-realization-runbook.md](docs/value-realization-runbook.md)                 | **v1**                       |
-| **Acquisition integration scorecard**   | [docs/acquisition-integration-scorecard.md](docs/acquisition-integration-scorecard.md) | **v1**                       |
-| **RACI + operating cadence**            | [docs/raci.md](docs/raci.md)                                                           | **v1**                       |
-| DUA + privacy office checklist          | [docs/dua-irb-checklist.md](docs/dua-irb-checklist.md)                                 | v1                           |
-| Decision log                            | [docs/decision-log.md](docs/decision-log.md)                                           | Running                      |
-| Roadmap V1/V2/V3/V4                     | [docs/roadmap.md](docs/roadmap.md)                                                     | v1                           |
-| Refinement plan                         | [docs/refinement-plan.md](docs/refinement-plan.md)                                     | living — Tracks A–F          |
-| LLM paraphrase A/B writeup              | [docs/llm-paraphrase-eval.md](docs/llm-paraphrase-eval.md)                             | v1                           |
-| Dashboards (SQL + alarms + RLS DDL)     | [dashboards/](dashboards/)                                                             | 8 queries · 6 alarms · 1 RLS |
-| Demo script                             | [docs/demo-script.md](docs/demo-script.md)                                             | 2-min + 5-min cuts           |
-| Model card                              | [docs/model-card.md](docs/model-card.md)                                               | v1                           |
+| Surface                                 | Artifact                                                                               | Status                           |
+| --------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------- |
+| Product thesis                          | [docs/charter.md](docs/charter.md)                                                     | v0.1                             |
+| System design                           | [docs/architecture.md](docs/architecture.md)                                           | v1                               |
+| Business case (with bear case)          | [docs/roi-model.md](docs/roi-model.md)                                                 | v1                               |
+| Product requirements                    | [docs/prd.md](docs/prd.md)                                                             | v1                               |
+| **Current results — canonical numbers** | [docs/current-results.md](docs/current-results.md)                                     | **single source of truth**       |
+| **Practice performance memo**           | [docs/practice-performance-memo.md](docs/practice-performance-memo.md)                 | v1                               |
+| **Governance reference architecture**   | [docs/governance.md](docs/governance.md)                                               | v1                               |
+| **Discovery + usability plan**          | [docs/discovery-plan.md](docs/discovery-plan.md)                                       | **v1**                           |
+| **Value-realization runbook**           | [docs/value-realization-runbook.md](docs/value-realization-runbook.md)                 | **v1**                           |
+| **Acquisition integration scorecard**   | [docs/acquisition-integration-scorecard.md](docs/acquisition-integration-scorecard.md) | **v1**                           |
+| **RACI + operating cadence**            | [docs/raci.md](docs/raci.md)                                                           | **v1**                           |
+| DUA + privacy office checklist          | [docs/dua-irb-checklist.md](docs/dua-irb-checklist.md)                                 | v1                               |
+| Decision log                            | [docs/decision-log.md](docs/decision-log.md)                                           | Running                          |
+| Roadmap V1/V2/V3/V4                     | [docs/roadmap.md](docs/roadmap.md)                                                     | v1                               |
+| Refinement plan                         | [docs/refinement-plan.md](docs/refinement-plan.md)                                     | living — Tracks A–F              |
+| LLM paraphrase A/B writeup              | [docs/llm-paraphrase-eval.md](docs/llm-paraphrase-eval.md)                             | v1                               |
+| Dashboards (SQL + alarms + RLS DDL)     | [dashboards/](dashboards/)                                                             | 9 query files · 6 alarms · 1 RLS |
+| Demo script                             | [docs/demo-script.md](docs/demo-script.md)                                             | 2-min + 5-min cuts               |
+| Model card                              | [docs/model-card.md](docs/model-card.md)                                               | v1                               |
 
 ## Build plan (4 weeks)
 

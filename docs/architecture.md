@@ -7,7 +7,7 @@
 
 ## One-paragraph summary
 
-A governed medallion pipeline on Databricks + Azure spanning oncology + multispecialty care (retinal, rheumatology, gastroenterology, neurology). Public CMS ASP + NDC-HCPCS + HRSA OPAIS files plus mock GPO contract exhibits, a commercial prior-auth workflow corpus, and synthetic claims land in Bronze Delta; normalization and entity resolution produce Silver tables registered in Unity Catalog (claim lines carry specialty, 340B, and PA flags); Gold tables power the scored exception queue across ten exception types, ROI aggregates, per-practice performance views, and an append-only override log. A LightGBM model (MLflow-tracked, registered, with gain-based feature importance) scores exception risk; isotonic regression on a held-out fold produces a calibrated score. The reviewer queue ranks on `expected_recovery = risk_score_calibrated × dollars_at_risk`. A RAG layer over policy and contract documents produces evidence-grounded explanations with citation enforcement and abstention; an optional LLM paraphrase stage (feature-flagged) re-renders the top-k items via Ollama under a strict post-generation citation verifier. Every score, explanation, and reviewer decision is logged to a controllership audit table with model version, prompt version, source-document version, and override rationale.
+A governed medallion pipeline on Databricks + Azure spanning oncology + multispecialty care (retinal, rheumatology, gastroenterology, neurology). Public CMS ASP + NDC-HCPCS + HRSA OPAIS files plus mock GPO contract exhibits, a commercial prior-auth workflow corpus, and synthetic claims land in Bronze Delta; normalization and entity resolution produce Silver tables registered in Unity Catalog (claim lines carry specialty, 340B, and PA flags); Gold tables power the scored exception queue across ten exception types, ROI aggregates, per-practice performance views, and an append-only override log. A LightGBM model (MLflow-tracked, registered, with gain-based feature importance) scores exception risk; 5-fold CV isotonic regression with a sample-weighted reliability slope produces a calibrated score. The reviewer queue ranks on `expected_recovery = risk_score_calibrated × dollars_at_risk`. A RAG layer over policy and contract documents produces evidence-grounded explanations with citation enforcement and abstention; an optional LLM paraphrase stage (feature-flagged) re-renders the top-k items via Ollama under a strict post-generation citation verifier. Every score, explanation, and reviewer decision is logged to a controllership audit table with model version, prompt version, source-document version, and override rationale.
 
 ## System diagram
 
@@ -40,7 +40,7 @@ flowchart LR
     end
 
     subgraph Gold["Gold Delta (modeled)"]
-        G1[exception_candidates<br/>8 types, priority-ordered]
+        G1[exception_candidates<br/>10 types, priority-ordered]
         G2[scored_exceptions<br/>+calibrated +expected_recovery]
         G3[explained_exceptions<br/>citation + abstention + paraphrase]
         G4[practice_performance<br/>per-practice KPIs]
@@ -50,7 +50,7 @@ flowchart LR
 
     subgraph Models["Model Layer"]
         M1[LightGBM risk scorer<br/>30 features]
-        M2[Isotonic calibration<br/>held-out 20% fold]
+        M2[Isotonic calibration<br/>5-fold CV, sample-weighted slope]
         M3[Retriever<br/>MiniLM + cosine]
         M4[Template explainer<br/>+ abstention @ 0.64]
         M5[LLM paraphraser<br/>flag-gated, verified]
@@ -64,7 +64,7 @@ flowchart LR
     end
 
     subgraph Consumers
-        C1[SQL dashboards<br/>8 queries + 6 alarms]
+        C1[SQL dashboards<br/>9 query files + 6 alarms]
         C2[Reviewer queue UI<br/>Streamlit mock]
         C3[Practice performance memo]
         C4[Eval harness<br/>per-specialty slicing]
@@ -159,7 +159,7 @@ Row-level-security pattern documented in `docs/governance.md` §4 (PHI overlay).
 ### Model layer
 
 - **LightGBM risk scorer** — 30 features (claim economics, drug attributes, practice attributes, access, rule indicators, payer one-hots, specialty one-hots, HCPCS ordinal); MLflow autologged; registered as `rev_integrity.risk_scorer@v1`
-- **Isotonic calibration** — fit on a 20% held-out fold of the candidate universe; stored as `risk_score_calibrated`. V2 moves to k-fold cross-validated isotonic.
+- **Isotonic calibration** — out-of-fold isotonic across a 5-fold StratifiedKFold over the candidate universe with a sample-count-weighted reliability slope (DL-0015); stored as `risk_score_calibrated`. V2 runs the same CV calibration on the rolling weekly refresh window.
 - **Retriever** — `sentence-transformers/all-MiniLM-L6-v2` embeddings + sklearn cosine similarity over chunked policies + contracts. Swap for Databricks Vector Search at scale (same interface).
 - **Template explainer** — query templates keyed on `exception_type`; emits `explanation_text` only when `citation_score ≥ 0.64`, else abstains with a structured reason. Deterministic and reproducible.
 - **LLM paraphraser (stage 7b, flag-gated)** — Ollama wrapper; post-generation verifier requires `[doc §section]` marker AND a 40-char verbatim fragment of the retrieved clause. Verification failure OR unreachable endpoint → falls back to template. Never publishes an unverified paraphrase.
@@ -176,7 +176,7 @@ See `docs/governance.md` for the full reference architecture. Summary:
 
 ### Consumers
 
-- **SQL dashboards** — 8 queries (leakage summary, reviewer queue top-100, exception exposure, practice heatmap, calibration health, override distribution, **specialty mix, access/PA performance**) under `dashboards/sql/`, plus 6 drift alarms under `dashboards/sql/alerts/` and the Unity Catalog RLS DDL under `dashboards/sql/governance/`
+- **SQL dashboards** — 9 query files under `dashboards/sql/`: 8 V1 dashboard panels (leakage summary, reviewer queue top-100, exception exposure, practice heatmap, calibration health, override distribution, **specialty mix, access/PA performance**) plus 1 V2 working-capital / DSO exposure query, plus 6 drift alarms under `dashboards/sql/alerts/` and the Unity Catalog RLS DDL under `dashboards/sql/governance/`
 - **Reviewer queue UI** — Streamlit mock at `src/oaifinance/ui/app.py` (run with `make reviewer-ui`); production UI is a Databricks App or embedded workstation panel
 - **Practice performance memo** — executive artifact driven by `oaifinance.practice.performance`
 - **Eval harness** — computes three rankings, citation precision, abstention rate, calibration, per-specialty slicing
@@ -185,7 +185,7 @@ See `docs/governance.md` for the full reference architecture. Summary:
 
 **Native:** Delta tables, Unity Catalog schemas, MLflow experiment + registered model, Databricks Asset Bundle skeleton, SQL dashboard definitions.
 
-**Compatible (runs locally on Parquet; zero code change to deploy):** all notebooks use PySpark/polars interchangeably; retrieval uses an in-memory FAISS-equivalent with documented upgrade path to Databricks Vector Search; LLM layer is config-swappable between Ollama (local dev), Azure OpenAI, and Databricks Mosaic AI Model Serving.
+**Compatible (runs locally on Parquet; designed so the data, model, and governance interfaces map onto Databricks without rewriting business logic — a production pilot still needs workspace-specific validation, access controls, retrospective-label wiring, and conversion testing in the target Azure Databricks environment):** notebooks use PySpark/polars interchangeably; retrieval uses an in-memory FAISS-equivalent with documented upgrade path to Databricks Vector Search; LLM layer is config-swappable between Ollama (local dev), Azure OpenAI, and Databricks Mosaic AI Model Serving.
 
 ## Non-goals (architectural)
 

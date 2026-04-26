@@ -134,6 +134,8 @@ Append-only. Every entry answers: _what did we decide, why, what did we consider
 
 **Reversal path.** Calibration module is one file; cross-validated isotonic is a one-function swap for V2.
 
+**Superseded by DL-0015 (2026-04-25):** V1.1 ships 5-fold CV isotonic with a sample-count-weighted reliability slope; the held-out fold described above is no longer the live behavior. Kept here for historical record.
+
 ---
 
 ## DL-0012 — 2026-04-24 — Expand golden citation map rather than narrow RAG queries

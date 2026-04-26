@@ -43,7 +43,7 @@ make clean          # wipe data/ artifacts/ mlruns/
 1. **Bronze** — CMS ASP + NDC-HCPCS crosswalk + 5 payer policies + 3 GPO contracts + commercial PA workflow doc → Parquet
 2. **Bronze** — synthetic oncology + multispecialty claims generator with latent `is_true_error` state observed noisily by rules
 3. **Silver** — `drug_economics` + `claim_lines` with ASP ratios, NDC validity, specialty + 340B + PA flags
-4. **Gold** — exception candidates across 8 priority-ordered types (`access_pa_gap`, `gpo_340b_rebate_excluded`, `chargeback_validity_fail`, `biosimilar_conversion_miss`, `ndc_hcpcs_mismatch`, `asp_drift`, `underpayment`, `denial`)
+4. **Gold** — exception candidates across 10 priority-ordered types (`access_pa_gap`, `jw_drug_waste`, `gpo_340b_rebate_excluded`, `chargeback_validity_fail`, `biosimilar_conversion_miss`, `site_of_care_underpayment`, `ndc_hcpcs_mismatch`, `asp_drift`, `underpayment`, `denial`)
 5. **Gold** — LightGBM risk scorer + MLflow run + gain-based feature importance
 6. **Gold** — 5-fold cross-validated isotonic calibration → `risk_score_calibrated` and `expected_recovery_calibrated`
 7. **RAG** — retrieval + citation-enforced template explainer with abstention at similarity < 0.64

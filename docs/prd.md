@@ -34,7 +34,7 @@ Quantified target (from the ROI model): 25% prevention lift on addressable leaka
 
 ### 4.1 Risk scoring
 
-- LightGBM binary classifier on 16 features (claim magnitude, billed-to-ASP ratio, rule indicators, payer one-hots, HCPCS ordinal, biosimilar flag)
+- LightGBM binary classifier on 30 features (claim magnitude, billed-to-ASP ratio, drug attributes, practice attributes, access/PA flags, ten rule indicators, four payer one-hots, five specialty one-hots, HCPCS ordinal); see `docs/model-card.md` §3 for the full feature list
 - Trained on 75/25 split of synthetic exception candidates, early-stopping on validation AUC
 - MLflow experiment + registered model `rev_integrity.risk_scorer`
 - Gain-based feature importance as the v1 explainer
@@ -100,7 +100,7 @@ These items were originally listed as V2 backlog and shipped in the polish + ref
 - **Contract economics module** — 340B + biosimilar conversion + chargeback validity exception types
 - **LLM paraphrasing layer** — Ollama wrapper with post-generation citation verifier, feature-flagged off by default
 - **Production calibration** — 5-fold CV isotonic with sample-weighted reliability slope (DL-0015)
-- **Per-practice leakage dashboard** — 8 SQL queries + 6 drift alarms under `dashboards/sql/`
+- **Per-practice leakage dashboard** — 9 SQL query files (8 V1 dashboard panels + 1 V2 working-capital / DSO exposure query) + 6 drift alarms under `dashboards/sql/`
 - **Multispecialty drug expansion** (C2)
 - **JW drug-waste exception type** (C3)
 - **Pre-bill PA propensity model** (C4)

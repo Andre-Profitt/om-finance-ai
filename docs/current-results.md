@@ -15,7 +15,7 @@
 | Specialties                  | 5 (oncology, retinal, rheumatology, gastroenterology, neurology) |
 | Payer policies in corpus     | 10                                                               |
 | GPO contracts in corpus      | 6                                                                |
-| SQL dashboards               | 8                                                                |
+| SQL query files              | 9 (8 V1 dashboard panels + 1 V2 working-capital / DSO query)     |
 
 **Exception types (priority order):**
 `access_pa_gap` · `jw_drug_waste` · `gpo_340b_rebate_excluded` · `chargeback_validity_fail` · `biosimilar_conversion_miss` · `site_of_care_underpayment` · `ndc_hcpcs_mismatch` · `asp_drift` · `underpayment` · `denial`

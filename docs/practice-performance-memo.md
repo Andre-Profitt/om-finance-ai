@@ -31,7 +31,7 @@ Acquiring or onboarding a practice is not a one-time event — it is a 100-day i
 **Projected 100-day integration (`PR-012`):**
 
 - Total recovery: **$322.2K** across five sequenced initiatives
-- Reviewer cost: **$292** (7 min × ~40 items × $42/hr effective)
+- Reviewer cost (labor only): **$292** (7 min × ~40 items × $42/hr effective). **This excludes implementation, SME / coder time, controllership review, change management, and tool / platform cost** — fully-loaded pilot economics are bear-cased to negative Y1 / Y3 break-even in [`docs/roi-model.md`](roi-model.md).
 - Net value: **$321.9K**
 - Modeled payback on $120K platform cost: **4.5 months**
 
@@ -139,7 +139,7 @@ The Control Tower ships the top-three today. Items four through eight are on the
 ## 8. What's next after this memo
 
 1. Wire the Control Tower into one pilot practice under DUA + privacy/security/legal/controllership approval (V2, 6–8 weeks; IRB review only if research/publication scope is added — this is finance-ops AI, default path is QI, not human-subjects research)
-2. Productionize calibration with a 20% held-out refresh weekly
+2. Productionize calibration with a 5-fold CV isotonic refresh on the rolling weekly window (sample-weighted reliability slope per DL-0015)
 3. Publish the model card + governance ref architecture to the controllership team
 4. Expand the payer-policy corpus to the practice's actual top-five payers by volume
 5. Schedule a 30-day retrospective on override rationale distribution to tune the top-100 queue
