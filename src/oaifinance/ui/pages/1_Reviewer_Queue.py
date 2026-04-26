@@ -72,7 +72,9 @@ ui.page_header(
 n = len(queue)
 total_dollars = float(queue["dollars_at_risk"].sum()) if n else 0.0
 expected = float(queue[rank_col].sum()) if n else 0.0
-abstention_share = float(queue["abstained"].mean() * 100) if n else 0.0
+abstention_share = (
+    float(queue["abstained"].fill_null(False).cast(pl.Float64).mean() * 100) if n else 0.0
+)
 n_specialties = queue["practice_specialty"].n_unique() if n else 0
 
 ui.kpi_grid(
