@@ -71,7 +71,7 @@ Live numbers from the latest run are written to `artifacts/eval_report.json` and
 **Known limitations:**
 
 - Labels are synthetic ground truth; production behavior will differ.
-- Calibration fit on same-run holdout; V2 uses a cross-validated fit.
+- Calibration is fit out-of-fold via 5-fold CV on the current synthetic candidate universe; production requires rolling-window validation on retrospective labels.
 - Imbalance: the candidate universe has a ~53% base rate (vs. ~7% in the full claim population); the model is scoring candidates, not classifying raw claims.
 - Access-PA features are new in v1; expected to tighten as the PA corpus expands in V2.
 
