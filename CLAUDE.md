@@ -27,6 +27,27 @@ make test           # smoke test
 make clean          # wipe data/ artifacts/ mlruns/
 ```
 
+## Multi-agent commit discipline
+
+After parallel-commit overlap during the round-5 UX patch, this lab enforces a stricter rule than `~/code/CLAUDE.md`:
+
+- **Main writer = one active agent only.** Whichever agent is currently authoring features commits to `main`. No second agent commits to `main` concurrently.
+- **Parallel agents** (research, screenshot capture, review, doc consistency sweeps, isolated experiments) **must use a topic branch**:
+  ```
+  agent/<YYYY-MM-DD>/<scope>/<agent-id>
+  # e.g. agent/2026-04-26/screenshots/codex-cli
+  ```
+  Parallel agents must not touch files the main writer is modifying. Merge authority sits with the main writer.
+- **Self-attribution.** Every commit body includes a session marker so the audit trail stays clean even when two sessions share the same git identity:
+  ```
+  Session: <agent>-<scope>-<YYYY-MM-DD>
+  Scope: <one-line scope>
+  Verification: <what was checked, e.g. "streamlit 8511, 4 page navs, clean render">
+  ```
+- **Clean-checkpoint rule.** When `main` reaches a stable state (working tree empty, tests + UI verified), the most recent commit is the checkpoint. The next agent rebases off it; nobody force-pushes over it.
+
+The current clean checkpoint is `d08b4bf chore(assets): align README + screenshot filenames with round-5 spec`.
+
 ## Conventions
 
 - **All data under `data/`** is reproducible: bronze/silver/gold rebuild from samples or live fetch. Never commit `data/bronze`, `data/silver`, `data/gold`, `data/synthetic` — `make clean` wipes them.
