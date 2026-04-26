@@ -24,8 +24,8 @@ Call out as the stages scroll:
 
 - **"Bronze: real CMS ASP + 5k synthetic claims across oncology and multispecialty — 18 HCPCS spanning retinal, rheum, GI, neurology."**
 - **"Gold: ten exception types, priority-ordered — access PA gap first because that's pre-bill, then JW drug waste, then 340B and contract economics, then revenue cycle."**
-- **"LightGBM on 30 features, MLflow-tracked and registered. AUC 0.92 — on noisy labels so it's earned."**
-- **"Held-out isotonic calibration. Cross-validated in V2."**
+- **"LightGBM on 30 features, MLflow-tracked and registered. AUC is logged as a debug-only metric — never the headline."**
+- **"5-fold CV isotonic calibration with a sample-weighted reliability slope. The slope, not AUC, is the gate."**
 - **"RAG: retrieval plus a template that quotes the cited clause, or abstains."**
 - **"Governance: every decision goes into an append-only override log."**
 - **"Eval — the two headline numbers are on the last row."**

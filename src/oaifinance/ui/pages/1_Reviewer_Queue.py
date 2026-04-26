@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import datetime as _dt
+
 import polars as pl
 import streamlit as st
 
@@ -17,6 +19,41 @@ st.set_page_config(
 )
 styles.inject()
 styles.maybe_presenter_mode()
+
+
+def _record_audit_event(
+    *,
+    claim_id: str,
+    decision: str,
+    rationale_category: str,
+    dollars: float,
+    model_run_id: str | None,
+    bulk_size: int = 1,
+) -> None:
+    """Append a session-scoped audit-event preview.
+
+    Production binding writes the same payload to gold.override_log after
+    reviewer authentication. In this view, events live only in
+    st.session_state and disappear on tab close.
+    """
+    events = st.session_state.setdefault("audit_preview_events", [])
+    event = {
+        "would_write_to": "gold.override_log",
+        "claim_id": claim_id,
+        "decision": decision,
+        "rationale_category": rationale_category,
+        "dollars_at_risk": f"${dollars:,.0f}",
+        "reviewer_role": "revenue_integrity_analyst",
+        "model_run_id": (str(model_run_id)[:16] + "…") if model_run_id else "—",
+        "prompt_version": "explainer.template.v1",
+        "source_doc_version": "corpus.2026-04-25",
+        "timestamp": _dt.datetime.now().isoformat(timespec="seconds"),
+        "production_status": "preview_only",
+        "bulk_size": str(bulk_size),
+    }
+    events.insert(0, event)
+    st.session_state["audit_preview_events"] = events[:20]
+
 
 merged = ud.merged_queue()
 frames = ud.load_all()
@@ -68,6 +105,7 @@ ui.page_header(
     run_id=model_run_id,
     n_rows=len(queue),
 )
+ui.governance_ribbon()
 
 n = len(queue)
 total_dollars = float(queue["dollars_at_risk"].sum()) if n else 0.0
@@ -163,20 +201,36 @@ if selected_rows:
     bulk_dollars = sum(float(queue["dollars_at_risk"][i]) for i in selected_rows)
     ui.section(f"Bulk action — {len(selected_claim_ids)} selected ({ui.fmt_dollars(bulk_dollars)})")
     st.markdown(
-        '<div class="hint">Bulk dispositions are previewed only; the override log is not written from this view.</div>',
+        '<div class="hint">Preview mode: actions create a session-scoped audit event below. '
+        "Production binding would write the same payload to the append-only override log "
+        "after reviewer authentication.</div>",
         unsafe_allow_html=True,
     )
     bb = st.columns([1, 1, 1, 1, 3])
-    if bb[0].button("Approve all", use_container_width=True, key="bulk_approve"):
+
+    def _bulk(action: str, rationale: str) -> None:
+        for i in selected_rows:
+            _record_audit_event(
+                claim_id=str(queue["claim_id"][i]),
+                decision=action,
+                rationale_category=rationale,
+                dollars=float(queue["dollars_at_risk"][i]),
+                model_run_id=model_run_id,
+                bulk_size=len(selected_rows),
+            )
         st.toast(
-            f"Preview: approve · {len(selected_claim_ids)} items · {ui.fmt_dollars(bulk_dollars)}"
+            f"Audit event preview · {action} · {len(selected_rows)} items "
+            f"· {ui.fmt_dollars(bulk_dollars)}"
         )
+
+    if bb[0].button("Approve all", use_container_width=True, key="bulk_approve"):
+        _bulk("approve", "agree_submit")
     if bb[1].button("Resubmit all", use_container_width=True, key="bulk_resubmit"):
-        st.toast(f"Preview: resubmit corrected · {len(selected_claim_ids)} items")
+        _bulk("resubmit_corrected", "agree_resubmit_corrected")
     if bb[2].button("Escalate all", use_container_width=True, key="bulk_escalate"):
-        st.toast(f"Preview: escalate · {len(selected_claim_ids)} items")
+        _bulk("escalate", "escalate_coding_team")
     if bb[3].button("Reject all", use_container_width=True, key="bulk_reject"):
-        st.toast(f"Preview: reject · {len(selected_claim_ids)} items")
+        _bulk("reject", "disagree_legitimate_claim")
     drill_default_index = selected_rows[0]
 else:
     drill_default_index = 0
@@ -240,22 +294,31 @@ with left:
 
     ui.section("Disposition (preview)")
     st.markdown(
-        '<div class="hint">Disposition actions are previewed in this view; the override log is not written until the action is bound to a reviewer session in production.</div>',
+        '<div class="hint">Preview mode: actions create a session-scoped audit event below. '
+        "Production binding would write the same payload to the append-only override log "
+        "after reviewer authentication.</div>",
         unsafe_allow_html=True,
     )
     b1, b2, b3, b4 = st.columns([1, 1, 1, 1])
+
+    def _single(action: str, rationale: str) -> None:
+        _record_audit_event(
+            claim_id=str(row["claim_id"]),
+            decision=action,
+            rationale_category=rationale,
+            dollars=float(row["dollars_at_risk"]),
+            model_run_id=model_run_id,
+        )
+        st.toast(f"Audit event preview · {action} · {row['claim_id']}")
+
     if b1.button("Approve", use_container_width=True):
-        st.toast(f"Recorded preview: approve · rationale=agree_submit · {row['claim_id']}")
+        _single("approve", "agree_submit")
     if b2.button("Resubmit corrected", use_container_width=True):
-        st.toast(
-            f"Recorded preview: resubmit · rationale=agree_resubmit_corrected · {row['claim_id']}"
-        )
+        _single("resubmit_corrected", "agree_resubmit_corrected")
     if b3.button("Escalate", use_container_width=True):
-        st.toast(f"Recorded preview: escalate · rationale=escalate_coding_team · {row['claim_id']}")
+        _single("escalate", "escalate_coding_team")
     if b4.button("Reject", use_container_width=True):
-        st.toast(
-            f"Recorded preview: reject · rationale=disagree_legitimate_claim · {row['claim_id']}"
-        )
+        _single("reject", "disagree_legitimate_claim")
 
 with right:
     ui.kpi_grid(
@@ -291,6 +354,9 @@ with right:
 """,
         unsafe_allow_html=True,
     )
+
+ui.section("Audit event preview (session-scoped)")
+ui.audit_event_preview_panel()
 
 ui.app_footer(
     version=__version__,

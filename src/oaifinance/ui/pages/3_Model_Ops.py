@@ -41,7 +41,64 @@ ui.page_header(
     "Calibration health · citation quality · reviewer agreement.",
     n_rows=n_exceptions,
 )
+ui.governance_ribbon()
 
+ui.section("Release gate summary")
+
+
+def _gate(value: float | None, lo: float, hi: float) -> str:
+    if value is None:
+        return "monitor"
+    return "pass" if lo <= float(value) <= hi else "fail"
+
+
+def _abst_status(value: float | None) -> str:
+    if value is None:
+        return "monitor"
+    return "pass" if 0.10 <= float(value) <= 0.40 else "fail"
+
+
+def _cit_status(value: float | None) -> str:
+    if value is None:
+        return "monitor"
+    return "pass" if float(value) >= 0.90 else "fail"
+
+
+_slope_evidence = (
+    f"slope {slope_cal:.3f} (target 0.85–1.15)" if slope_cal is not None else "not available"
+)
+_cit_evidence = f"{ui.fmt_pct(cit_p, places=1)} (target ≥ 90%)" if cit_p is not None else "n/a"
+_abst_evidence = f"{ui.fmt_pct(abst, places=1)} (target 10–40%)" if abst is not None else "n/a"
+
+ui.release_gate_table(
+    [
+        ("Calibration slope", _gate(slope_cal, 0.85, 1.15), _slope_evidence),
+        ("Citation precision", _cit_status(cit_p), _cit_evidence),
+        ("Abstention rate", _abst_status(abst), _abst_evidence),
+        (
+            "Override rate",
+            "monitor",
+            "review after pilot labels are wired (V2 retrospective ingest)",
+        ),
+        (
+            "Fairness slice",
+            "monitor",
+            "equal-effort review by specialty; per-slice precision tracked in eval report",
+        ),
+        (
+            "Security & privacy",
+            "blocked",
+            "DUA + privacy/legal/controllership sign-off required (docs/dua-irb-checklist.md)",
+        ),
+        (
+            "Production promotion",
+            "no",
+            "synthetic data only; promotion requires V2 pilot evidence",
+        ),
+    ]
+)
+
+ui.section("Live metrics")
 ui.kpi_grid(
     [
         ("Calibration (uncal)", ui.fmt_score(slope_uncal), "target band 0.85–1.15"),

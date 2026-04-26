@@ -68,6 +68,7 @@ def main() -> None:
         run_id=str(model_run_id) if model_run_id else None,
         n_rows=n_exceptions,
     )
+    ui.governance_ribbon()
 
     daily = ud.daily_exposure_series()
     ui.kpi_with_spark_row(

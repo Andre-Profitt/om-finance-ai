@@ -10,6 +10,21 @@
 
 **Not affiliated with McKesson, US Oncology Network, Ontada, CoverMyMeds, Glide Health, or any other named entity. No PHI. All claims data is synthetic; drug prices anchored to public CMS ASP Part B files.**
 
+![O&M Finance AI Control Tower overview](docs/assets/01_control_tower_overview.png)
+
+---
+
+## 60-second evaluator path
+
+For a hiring manager / interview panel skimming this artifact:
+
+1. Look at the **Control Tower overview** screenshot above — governance posture ribbon, headline KPIs, navigation surfaces.
+2. Open [`docs/assets/02_reviewer_queue.png`](docs/assets/02_reviewer_queue.png) — top-N work queue, evidence, abstention, disposition with session-scoped audit-event preview.
+3. Open [`docs/assets/03_model_ops.png`](docs/assets/03_model_ops.png) — release-gate summary (pass / monitor / blocked) over calibration, citation, abstention, fairness, security, promotion.
+4. Open [`docs/assets/04_audit_trail.png`](docs/assets/04_audit_trail.png) — append-only override log with model + prompt + source-doc lineage.
+5. Open [`docs/assets/05_network.png`](docs/assets/05_network.png) — per-practice exposure, specialty mix, auto-selected acquisition target.
+6. Read [`docs/current-results.md`](docs/current-results.md) for the canonical metric run, then [`docs/charter.md`](docs/charter.md) and [`docs/value-realization-runbook.md`](docs/value-realization-runbook.md) for the TPM framing.
+
 ---
 
 ## Run it yourself

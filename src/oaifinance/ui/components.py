@@ -227,6 +227,97 @@ def kpi_with_spark_row(
             kpi_with_spark(label, value, spark, footnote)
 
 
+def governance_ribbon(
+    *,
+    environment: str = "Demo / synthetic",
+    phi: str = "None",
+    citation_gate: str = "Enforced",
+    calibration_gate: str = "Pass",
+    reviewer_mode: str = "Human-in-the-loop",
+    promotion_status: str = "Not production eligible",
+) -> None:
+    """Compact governance posture ribbon shown under every page header.
+
+    Signals to a reviewer or executive at a glance that this artifact is a
+    governed surface: synthetic data, no PHI, citation enforcement on,
+    calibration in band, no auto-actions, and not production-promoted.
+    """
+    kpi_grid(
+        [
+            ("Environment", environment, "portfolio artifact"),
+            ("PHI", phi, "synthetic claims only"),
+            ("Citation gate", citation_gate, "quote-or-abstain"),
+            ("Calibration gate", calibration_gate, "0.85–1.15 slope band"),
+            ("Reviewer mode", reviewer_mode, "actions require human approval"),
+            ("Promotion", promotion_status, "pilot gates required"),
+        ],
+        accent_first=False,
+    )
+
+
+def release_gate_table(rows: list[tuple[str, str, str]]) -> None:
+    """Render a release-gate pass/monitor/fail/blocked table.
+
+    Each row is (gate_name, status, evidence). Status is rendered as a pill
+    with a semantic color; evidence is the supporting metric or rationale.
+    """
+    pill_kind = {
+        "pass": "explained",
+        "monitor": "medium",
+        "fail": "abstained",
+        "blocked": "abstained",
+        "no": "low",
+    }
+    parts = ['<div class="release-gate-table">']
+    parts.append(
+        '<div class="release-gate-row release-gate-head">'
+        "<div>Gate</div><div>Status</div><div>Evidence</div>"
+        "</div>"
+    )
+    for gate, status, evidence in rows:
+        kind = pill_kind.get(status.lower(), "info")
+        parts.append(
+            '<div class="release-gate-row">'
+            f"<div>{escape(gate)}</div>"
+            f"<div>{status_pill(status, kind)}</div>"
+            f"<div>{escape(evidence)}</div>"
+            "</div>"
+        )
+    parts.append("</div>")
+    st.markdown("".join(parts), unsafe_allow_html=True)
+
+
+def audit_event_preview_panel() -> None:
+    """Render the session-scoped audit-event preview log.
+
+    Production binding writes the same payload to the append-only override
+    log after reviewer authentication; in this view, events live only in
+    `st.session_state` and disappear on tab close.
+    """
+    events = st.session_state.get("audit_preview_events", [])
+    if not events:
+        st.markdown(
+            '<div class="hint">No audit events recorded yet this session. '
+            "Disposition actions in the drill-in will write a session-scoped "
+            "preview event here — production binding writes the same payload "
+            "to the append-only override log.</div>",
+            unsafe_allow_html=True,
+        )
+        return
+    parts = ['<div class="audit-event-list">']
+    for ev in events:
+        rows = "".join(
+            f'<div class="audit-event-row">'
+            f'<span class="audit-event-key">{escape(str(k))}</span>'
+            f'<span class="audit-event-val">{escape(str(v))}</span>'
+            "</div>"
+            for k, v in ev.items()
+        )
+        parts.append(f'<div class="audit-event-card">{rows}</div>')
+    parts.append("</div>")
+    st.markdown("".join(parts), unsafe_allow_html=True)
+
+
 def empty_state(message: str, hint: str | None = None) -> None:
     st.markdown(
         f"""

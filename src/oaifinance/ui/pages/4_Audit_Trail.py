@@ -39,6 +39,7 @@ ui.page_header(
     "Append-only reviewer-decision log with model + prompt + source lineage. SOX-aligned change control.",
     n_rows=n_decisions,
 )
+ui.governance_ribbon()
 
 ui.kpi_grid(
     [

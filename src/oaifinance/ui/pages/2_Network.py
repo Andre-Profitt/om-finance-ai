@@ -36,6 +36,7 @@ ui.page_header(
     f"{n_practices} practices across oncology and multispecialty.",
     n_rows=n_practices,
 )
+ui.governance_ribbon()
 
 ui.kpi_grid(
     [

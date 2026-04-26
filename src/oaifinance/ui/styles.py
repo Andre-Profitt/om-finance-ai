@@ -317,6 +317,69 @@ body.presenter .page-header {
     font-size: 0.7rem;
 }
 
+/* Release-gate table */
+.release-gate-table {
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    background: var(--color-bg);
+}
+.release-gate-row {
+    display: grid;
+    grid-template-columns: 1.4fr 0.6fr 2fr;
+    gap: 1rem;
+    padding: 0.6rem 1rem;
+    align-items: center;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.85rem;
+}
+.release-gate-row:last-child { border-bottom: none; }
+.release-gate-head {
+    background: var(--color-surface);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    font-weight: 600;
+}
+.release-gate-row > div:nth-child(3) {
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+}
+
+/* Audit-event preview list */
+.audit-event-list {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+.audit-event-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-primary);
+    border-radius: 4px;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.8rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.audit-event-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 0.5rem;
+    line-height: 1.5;
+}
+.audit-event-key {
+    color: var(--color-text-muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.audit-event-val {
+    color: var(--color-text);
+    word-break: break-all;
+}
+
 /* Utility */
 .hint {
     font-size: 0.8rem;
